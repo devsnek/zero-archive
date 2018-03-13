@@ -73,7 +73,7 @@ static void DebugLog(const FunctionCallbackInfo<Value>& info) {
   HandleScope handle_scope(isolate);
 
   String::Utf8Value utf8(isolate, info[0].As<String>());
-  bool prefix = info[1]->IsBoolean() ? info[1]->ToBoolean()->Value() : true;
+  bool prefix = info[1]->IsTrue();
 
   fprintf(stdout, "%s%s\n", prefix ? "[IVAN] " : "", *utf8);
 }
@@ -83,7 +83,7 @@ static void DebugError(const FunctionCallbackInfo<Value>& info) {
   HandleScope handle_scope(isolate);
 
   String::Utf8Value utf8(isolate, info[0].As<String>());
-  bool prefix = info[1]->IsBoolean() ? info[1]->ToBoolean()->Value() : true;
+  bool prefix = info[1]->IsTrue();
 
   fprintf(stderr, "%s%s\n", prefix ? "[IVAN] " : "", *utf8);
 }
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
   create_params.array_buffer_allocator = ArrayBuffer::Allocator::NewDefaultAllocator();
   Isolate* isolate = Isolate::New(create_params);
 
-  isolate->SetMicrotasksPolicy(MicrotasksPolicy::kExplicit);
+  isolate->SetMicrotasksPolicy(MicrotasksPolicy::kAuto); // TODO: change to kExplicit
 
 #define V(name) _register_##name()
   V(io);

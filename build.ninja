@@ -1,7 +1,7 @@
 cflags = -Wall -pthread -std=c++0x
 includes = -I deps/v8/include -Ideps/cxxopts/include -luv
 
-v8_deps = deps/v8/out.gn/x64.release/obj/{libv8_{base,libbase,external_snapshot,libplatform,libsampler},third_party/icu/libicu{uc,i18n},src/inspector/libinspector}.a
+v8_deps = deps/v8/out.gn/x64.release/obj/{libv8_monolith,third_party/icu/libicu{uc,i18n},src/inspector/libinspector}.a
 
 rule cc
   command = g++ $cflags $includes $in -o $out $v8_deps

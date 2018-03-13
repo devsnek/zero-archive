@@ -3,3 +3,4 @@ build
 ivan
 .ninja_deps
 .ninja_log
+*.dSYM
