@@ -45,7 +45,7 @@ ModuleWrap::~ModuleWrap() {
 
 void ModuleWrap::Instantiate() {
   Isolate* isolate = this->isolate_;
-  Module* module = this->module_.Get(isolate);
+  Local<Module> module = this->module_.Get(isolate);
   USE(module->InstantiateModule(isolate->GetCurrentContext(), ModuleWrap::ResolveCallback));
 }
 

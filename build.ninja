@@ -1,5 +1,5 @@
 cflags = -Wall -pthread -std=c++0x
-includes = -I deps/v8/include -Ideps/cxxopts/include -luv
+includes = -I deps/v8/include -luv
 
 v8_deps = deps/v8/out.gn/x64.release/obj/{libv8_monolith,third_party/icu/libicu{uc,i18n}}.a
 
@@ -11,4 +11,4 @@ rule blob2c
 
 build ivan: cc src/ivan.cc src/ivan_module_wrap.cc src/ivan_io.cc src/ivan_util.cc build/ivan_blobs.cc || build/ivan_blobs.cc
 
-build build/ivan_blobs.cc: blob2c lib/internal/ivan.js lib/console.js lib/util.js lib/process.js lib/internal/loader/Loader.js lib/internal/argparse.js lib/fs.js
+build build/ivan_blobs.cc: blob2c lib/internal/ivan.js lib/console.js lib/util.js lib/process.js lib/internal/loader/Loader.js lib/internal/loader/Translators.js lib/internal/argparse.js lib/fs.js

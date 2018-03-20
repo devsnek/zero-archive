@@ -2,6 +2,7 @@
 #define _SRC_IVAN_H
 
 #include <v8.h>
+#include <type_traits> // std::remove_reference
 
 #ifdef __GNUC__
 #define LIKELY(expr) __builtin_expect(!!(expr), 1)
@@ -44,6 +45,14 @@ constexpr size_t arraysize(const T(&)[N]) { return N; }
 
 #define IVAN_INTERNAL_EXPOSE(target, name) \
   USE(target->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, #name), FunctionTemplate::New(isolate, name)->GetFunction()))
+
+#define ASSIGN_OR_RETURN_UNWRAP(ptr, obj, ...)                                \
+  do {                                                                        \
+    *ptr =                                                                    \
+        Unwrap<typename std::remove_reference<decltype(**ptr)>::type>(obj);   \
+    if (*ptr == nullptr)                                                      \
+      return __VA_ARGS__;                                                     \
+  } while (0)
 
 namespace ivan {
 

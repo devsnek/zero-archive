@@ -12,6 +12,7 @@ using namespace v8;
 #define V(name) void _register_##name()
 V(io);
 V(util);
+// V(module_wrap);
 #undef V
 
 namespace ivan {
@@ -102,6 +103,7 @@ int main(int argc, char* argv[]) {
 #define V(name) _register_##name()
   V(io);
   V(util);
+  // V(module_wrap);
 #undef V
 
   {
