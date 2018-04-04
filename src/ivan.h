@@ -1,8 +1,8 @@
-#ifndef _SRC_IVAN_H
-#define _SRC_IVAN_H
+#ifndef SRC_IVAN_H_
+#define SRC_IVAN_H_
 
 #include <v8.h>
-#include <type_traits> // std::remove_reference
+#include <type_traits>  // std::remove_reference
 
 #ifdef __GNUC__
 #define LIKELY(expr) __builtin_expect(!!(expr), 1)
@@ -37,21 +37,37 @@ template <typename T> inline void USE(T&&) {};
 template <typename T, size_t N>
 constexpr size_t arraysize(const T(&)[N]) { return N; }
 
-#define IVAN_REGISTER_INTERNAL(name, fn) \
-  static ivan::ivan_module _module = {#name, fn}; \
-  void _register_ ## name() {                     \
-    ivan_module_register(&_module);               \
+#define IVAN_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
+
+#define IVAN_SET_METHOD(target, name, fn)                                      \
+  USE(target->Set(isolate->GetCurrentContext(),                                \
+                   IVAN_STRING(isolate, name),                                 \
+                   v8::FunctionTemplate::New(isolate, fn)->GetFunction()))
+
+/*
+inline void IVAN_SET_PROTO_METHOD(v8::Local<v8::Object> target, const char* name, v8::FunctionCallback callback) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+
+  v8::Local<v8::Function> function = FunctionTemplate::New(isolate, callback)->GetFunction();
+  const v8::NewStringType type = v8::NewStringType::kInternalized;
+  v8::Local<v8::String> name_string = v8::String::NewFromUtf8(isolate, name, type).ToLocalChecked();
+  target->Set(name_string, function);
+  function->SetName(name_string);
+}
+*/
+
+#define IVAN_REGISTER_INTERNAL(name, fn)                                       \
+  static ivan::ivan_module _ivan_module_##name = {#name, fn};                  \
+  void _ivan_register_##name() {                                               \
+    ivan_module_register(&_ivan_module_##name);                                \
   }
 
-#define IVAN_INTERNAL_EXPOSE(target, name) \
-  USE(target->Set(isolate->GetCurrentContext(), String::NewFromUtf8(isolate, #name), FunctionTemplate::New(isolate, name)->GetFunction()))
-
-#define ASSIGN_OR_RETURN_UNWRAP(ptr, obj, ...)                                \
-  do {                                                                        \
-    *ptr =                                                                    \
-        Unwrap<typename std::remove_reference<decltype(**ptr)>::type>(obj);   \
-    if (*ptr == nullptr)                                                      \
-      return __VA_ARGS__;                                                     \
+#define ASSIGN_OR_RETURN_UNWRAP(ptr, obj, ...)                                 \
+  do {                                                                         \
+    *ptr =                                                                     \
+        Unwrap<typename std::remove_reference<decltype(**ptr)>::type>(obj);    \
+    if (*ptr == nullptr)                                                       \
+      return __VA_ARGS__;                                                      \
   } while (0)
 
 namespace ivan {
@@ -67,9 +83,12 @@ struct ivan_module {
 void ivan_module_register(void*);
 
 enum EmbedderKeys {
-  BindingCache
+  kBindingCache,
+  kInitializeImportMetaCallback,
+  kImportModuleDynamicallyCallback,
+  kModuleMap,
 };
 
-} // namespace ivan
+}  // namespace ivan
 
-#endif // _SRC_IVAN_H
+#endif  // SRC_IVAN_H_

@@ -6,13 +6,27 @@
 #include "ivan.h"
 #include "ivan_script_wrap.h"
 #include "ivan_blobs.h"
+#include "ivan_errors.h"
 
-using namespace v8;
+using v8::Array;
+using v8::ArrayBuffer;
+using v8::Context;
+using v8::HandleScope;
+using v8::Function;
+using v8::FunctionCallbackInfo;
+using v8::FunctionTemplate;
+using v8::Local;
+using v8::MaybeLocal;
+using v8::Isolate;
+using v8::Object;
+using v8::String;
+using v8::Value;
+using v8::V8;
+using v8::Platform;
+using v8::TryCatch;
 
-#define V(name) void _register_##name()
-V(io);
-V(util);
-// V(module_wrap);
+#define V(name) void _ivan_register_##name()
+  V(util);
 #undef V
 
 namespace ivan {
@@ -37,37 +51,7 @@ inline struct ivan_module* get_module(const char* name) {
   return mp;
 }
 
-} // namespace ivan
-
-static void Bindings(const FunctionCallbackInfo<Value>& info) {
-  Isolate* isolate = info.GetIsolate();
-  HandleScope handle_scope(isolate);
-
-  Local<Context> context = isolate->GetCurrentContext();
-
-  Local<String> req = info[0].As<String>();
-
-  Local<Object> cache = context->GetEmbedderData(ivan::EmbedderKeys::BindingCache).As<Object>();
-  if (cache->HasOwnProperty(context, req).FromMaybe(false)) {
-    info.GetReturnValue().Set(cache->Get(context, req).ToLocalChecked());
-    return;
-  }
-
-  String::Utf8Value request(isolate, req);
-
-  Local<Object> exports = Object::New(isolate);
-
-  if (strcmp(*request, "natives") == 0) {
-    ivan::blobs::DefineJavaScript(isolate, exports);
-  } else {
-    ivan::ivan_module* mod = ivan::get_module(*request);
-    if (mod != nullptr)
-      mod->im_function(isolate, exports);
-  }
-
-  USE(cache->Set(context, req, exports));
-  info.GetReturnValue().Set(exports);
-}
+namespace js_debug {
 
 static void DebugLog(const FunctionCallbackInfo<Value>& info) {
   Isolate* isolate = info.GetIsolate();
@@ -89,21 +73,65 @@ static void DebugError(const FunctionCallbackInfo<Value>& info) {
   fprintf(stderr, "%s%s\n", prefix ? "[IVAN] " : "", *utf8);
 }
 
+static void Init(Isolate* isolate, Local<Object> exports) {
+  IVAN_SET_METHOD(exports, "log", DebugLog);
+  IVAN_SET_METHOD(exports, "error", DebugError);
+}
+
+}  // namespace js_debug
+
+}  // namespace ivan
+
+IVAN_REGISTER_INTERNAL(debug, ivan::js_debug::Init);
+
+static void Bindings(const FunctionCallbackInfo<Value>& info) {
+  Isolate* isolate = info.GetIsolate();
+  HandleScope handle_scope(isolate);
+
+  Local<Context> context = isolate->GetCurrentContext();
+
+  Local<String> req = info[0].As<String>();
+
+  Local<Object> cache =
+      context->GetEmbedderData(ivan::EmbedderKeys::kBindingCache).As<Object>();
+  if (cache->HasOwnProperty(context, req).FromMaybe(false)) {
+    info.GetReturnValue().Set(cache->Get(context, req).ToLocalChecked());
+    return;
+  }
+
+  String::Utf8Value request(isolate, req);
+
+  Local<Object> exports = Object::New(isolate);
+
+  if (strcmp(*request, "natives") == 0) {
+    ivan::blobs::DefineJavaScript(isolate, exports);
+  } else {
+    ivan::ivan_module* mod = ivan::get_module(*request);
+    if (mod != nullptr)
+      mod->im_function(isolate, exports);
+  }
+
+  USE(cache->Set(context, req, exports));
+  info.GetReturnValue().Set(exports);
+}
+
 int main(int argc, char* argv[]) {
-  std::unique_ptr<Platform> platform = platform::NewDefaultPlatform();
+  std::unique_ptr<Platform> platform = v8::platform::NewDefaultPlatform();
   V8::InitializePlatform(platform.get());
   V8::Initialize();
 
   Isolate::CreateParams create_params;
-  create_params.array_buffer_allocator = ArrayBuffer::Allocator::NewDefaultAllocator();
+  create_params.array_buffer_allocator =
+      ArrayBuffer::Allocator::NewDefaultAllocator();
   Isolate* isolate = Isolate::New(create_params);
 
-  isolate->SetMicrotasksPolicy(MicrotasksPolicy::kAuto); // TODO: change to kExplicit
+  // TODO(devsnek): change to kExplicit
+  isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
 
-#define V(name) _register_##name()
-  V(io);
+#define V(name) _ivan_register_##name()
+  V(debug);
+  V(script_wrap);
   V(util);
-  // V(module_wrap);
 #undef V
 
   {
@@ -113,12 +141,8 @@ int main(int argc, char* argv[]) {
     Local<Context> context = Context::New(isolate);
     Context::Scope context_scope(context);
 
-    context->SetEmbedderData(ivan::EmbedderKeys::BindingCache, Object::New(isolate));
-
-    USE(context->Global()->Set(context, String::NewFromUtf8(isolate, "global"), context->Global()));
-
-    Local<Function> ivan_fn = ivan::ScriptWrap::Internal(
-        isolate, String::NewFromUtf8(isolate, "ivan"), ivan::blobs::MainSource(isolate)).As<Function>();
+    context->SetEmbedderData(ivan::EmbedderKeys::kBindingCache,
+        Object::New(isolate));
 
     Local<Object> process = Object::New(isolate);
     Local<Array> pargv = Array::New(isolate, argc);
@@ -126,19 +150,26 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < argc; i++)
       USE(pargv->Set(context, i, String::NewFromUtf8(isolate, argv[i])));
 
-    Local<Object> debug = Object::New(isolate);
-    USE(debug->Set(context, String::NewFromUtf8(isolate, "log"), FunctionTemplate::New(isolate, DebugLog)->GetFunction()));
-    USE(debug->Set(context, String::NewFromUtf8(isolate, "error"), FunctionTemplate::New(isolate, DebugError)->GetFunction()));
-
-    int argc = 4;
+    int argc = 2;
     Local<Value> args[] = {
       process,
-      FunctionTemplate::New(isolate, ivan::ScriptWrap::Exposed)->GetFunction(),
       FunctionTemplate::New(isolate, Bindings)->GetFunction(),
-      debug,
     };
-    
-    USE(ivan_fn->Call(context, context->Global(), argc, args));
+
+    USE(context->Global()->Set(
+          context, String::NewFromUtf8(isolate, "global"), context->Global()));
+
+    MaybeLocal<Value> ivan_fn_maybe = ivan::ScriptWrap::Internal(
+        isolate, IVAN_STRING(isolate, "ivan"),
+        ivan::blobs::MainSource(isolate));
+    Local<Value> ivan_fn;
+    if (ivan_fn_maybe.ToLocal(&ivan_fn)) {
+      TryCatch try_catch(isolate);
+      USE(ivan_fn.As<Function>()->Call(
+            context, Undefined(isolate), argc, args));
+      if (try_catch.HasCaught())
+        ivan::errors::ReportException(isolate, &try_catch);
+    }
   }
 
   isolate->Dispose();

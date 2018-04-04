@@ -15,7 +15,7 @@ namespace blobs {{
 {definitions}
 
 Local<String> MainSource(Isolate* isolate) {{
-  return internal_ivan_value.ToStringChecked(isolate);
+  return ivan_value.ToStringChecked(isolate);
 }};
 
 void DefineJavaScript(Isolate* isolate, Local<Object> target) {{

@@ -1,10 +1,18 @@
 #include <v8.h>
 #include "ivan.h"
 
-using namespace v8;
-
 namespace ivan {
 namespace util {
+
+using v8::Array;
+using v8::Local;
+using v8::FunctionCallbackInfo;
+using v8::Object;
+using v8::Integer;
+using v8::Isolate;
+using v8::Value;
+using v8::Promise;
+using v8::Value;
 
 static void GetPromiseDetails(const FunctionCallbackInfo<Value>& info) {
   Isolate* isolate = info.GetIsolate();
@@ -24,10 +32,10 @@ static void GetPromiseDetails(const FunctionCallbackInfo<Value>& info) {
 }
 
 static void Init(Isolate* isolate, Local<Object> target) {
-  IVAN_INTERNAL_EXPOSE(target, GetPromiseDetails);
+  IVAN_SET_METHOD(target, "getPromiseDetails", GetPromiseDetails);
 }
 
-} // namespace util
-} // namespace ivan
+}  // namespace util
+}  // namespace ivan
 
 IVAN_REGISTER_INTERNAL(util, ivan::util::Init);
