@@ -31,8 +31,22 @@ static void GetPromiseDetails(const FunctionCallbackInfo<Value>& info) {
     ret->Set(1, promise->Result());
 }
 
+static void IsPromise(const FunctionCallbackInfo<Value>& info) {
+  info.GetReturnValue().Set(info[0]->IsPromise());
+}
+
 static void Init(Isolate* isolate, Local<Object> target) {
-  IVAN_SET_METHOD(target, "getPromiseDetails", GetPromiseDetails);
+  IVAN_SET_METHOD(isolate, target, "getPromiseDetails", GetPromiseDetails);
+  IVAN_SET_METHOD(isolate, target, "isPromise", IsPromise);
+
+#define V(name) \
+  USE(target->Set(isolate->GetCurrentContext(),                                \
+              IVAN_STRING(isolate, #name),                                     \
+              Integer::New(isolate, Promise::PromiseState::name)))
+  V(kPending);
+  V(kFulfilled);
+  V(kRejected);
+#undef V
 }
 
 }  // namespace util

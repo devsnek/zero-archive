@@ -27,6 +27,7 @@ using v8::TryCatch;
 
 #define V(name) void _ivan_register_##name()
   V(util);
+  V(module_wrap);
 #undef V
 
 namespace ivan {
@@ -74,8 +75,8 @@ static void DebugError(const FunctionCallbackInfo<Value>& info) {
 }
 
 static void Init(Isolate* isolate, Local<Object> exports) {
-  IVAN_SET_METHOD(exports, "log", DebugLog);
-  IVAN_SET_METHOD(exports, "error", DebugError);
+  IVAN_SET_METHOD(isolate, exports, "log", DebugLog);
+  IVAN_SET_METHOD(isolate, exports, "error", DebugError);
 }
 
 }  // namespace js_debug
@@ -131,6 +132,7 @@ int main(int argc, char* argv[]) {
 #define V(name) _ivan_register_##name()
   V(debug);
   V(script_wrap);
+  V(module_wrap);
   V(util);
 #undef V
 

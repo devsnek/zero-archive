@@ -38,7 +38,7 @@ static void Exposed(const v8::FunctionCallbackInfo<v8::Value>& info) {
 }
 
 void Init(v8::Isolate* isolate, v8::Local<v8::Object> exports) {
-  IVAN_SET_METHOD(exports, "run", Exposed);
+  IVAN_SET_METHOD(isolate, exports, "run", Exposed);
 }
 
 }  // namespace ScriptWrap

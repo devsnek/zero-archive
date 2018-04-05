@@ -37,12 +37,37 @@ template <typename T> inline void USE(T&&) {};
 template <typename T, size_t N>
 constexpr size_t arraysize(const T(&)[N]) { return N; }
 
+template <typename TypeName>
+void Wrap(v8::Local<v8::Object> object, TypeName* pointer) {
+  CHECK_EQ(false, object.IsEmpty());
+  CHECK_GT(object->InternalFieldCount(), 0);
+  object->SetAlignedPointerInInternalField(0, pointer);
+}
+
 #define IVAN_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
 
-#define IVAN_SET_METHOD(target, name, fn)                                      \
+#define IVAN_SET_METHOD(isolate, target, name, fn)                             \
   USE(target->Set(isolate->GetCurrentContext(),                                \
                    IVAN_STRING(isolate, name),                                 \
                    v8::FunctionTemplate::New(isolate, fn)->GetFunction()))
+
+inline void IVAN_SET_PROTO_METHOD(
+    v8::Isolate* isolate,
+    v8::Local<v8::FunctionTemplate> that,
+    const char* name,
+    v8::FunctionCallback callback) {
+  v8::Local<v8::Signature> signature = v8::Signature::New(isolate, that);
+  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(
+      isolate, callback, v8::Local<v8::Value>(), signature);
+  const v8::NewStringType type = v8::NewStringType::kInternalized;
+  v8::Local<v8::String> name_string =
+    v8::String::NewFromUtf8(isolate, name, type).ToLocalChecked();
+  that->PrototypeTemplate()->Set(name_string, t);
+  t->SetClassName(name_string);
+}
+
+#define IVAN_THROW_EXCEPTION(isolate, message) \
+  (void) isolate->ThrowException(v8::Exception::Error(IVAN_STRING(isolate, message)))
 
 /*
 inline void IVAN_SET_PROTO_METHOD(v8::Local<v8::Object> target, const char* name, v8::FunctionCallback callback) {
@@ -61,6 +86,14 @@ inline void IVAN_SET_PROTO_METHOD(v8::Local<v8::Object> target, const char* name
   void _ivan_register_##name() {                                               \
     ivan_module_register(&_ivan_module_##name);                                \
   }
+
+template <typename TypeName>
+TypeName* Unwrap(v8::Local<v8::Object> object) {
+  CHECK_EQ(false, object.IsEmpty());
+  CHECK_GT(object->InternalFieldCount(), 0);
+  void* pointer = object->GetAlignedPointerFromInternalField(0);
+  return static_cast<TypeName*>(pointer);
+}
 
 #define ASSIGN_OR_RETURN_UNWRAP(ptr, obj, ...)                                 \
   do {                                                                         \
@@ -84,9 +117,9 @@ void ivan_module_register(void*);
 
 enum EmbedderKeys {
   kBindingCache,
-  kInitializeImportMetaCallback,
+  kInitializeImportMetaObjectCallback,
   kImportModuleDynamicallyCallback,
-  kModuleMap,
+  kModuleData,
 };
 
 }  // namespace ivan
