@@ -44,6 +44,14 @@ void Wrap(v8::Local<v8::Object> object, TypeName* pointer) {
   object->SetAlignedPointerInInternalField(0, pointer);
 }
 
+template <typename TypeName>
+TypeName* Unwrap(v8::Local<v8::Object> object) {
+  CHECK_EQ(false, object.IsEmpty());
+  CHECK_GT(object->InternalFieldCount(), 0);
+  void* pointer = object->GetAlignedPointerFromInternalField(0);
+  return static_cast<TypeName*>(pointer);
+}
+
 #define IVAN_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
 
 #define IVAN_SET_METHOD(isolate, target, name, fn)                             \
@@ -69,31 +77,11 @@ inline void IVAN_SET_PROTO_METHOD(
 #define IVAN_THROW_EXCEPTION(isolate, message) \
   (void) isolate->ThrowException(v8::Exception::Error(IVAN_STRING(isolate, message)))
 
-/*
-inline void IVAN_SET_PROTO_METHOD(v8::Local<v8::Object> target, const char* name, v8::FunctionCallback callback) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-
-  v8::Local<v8::Function> function = FunctionTemplate::New(isolate, callback)->GetFunction();
-  const v8::NewStringType type = v8::NewStringType::kInternalized;
-  v8::Local<v8::String> name_string = v8::String::NewFromUtf8(isolate, name, type).ToLocalChecked();
-  target->Set(name_string, function);
-  function->SetName(name_string);
-}
-*/
-
 #define IVAN_REGISTER_INTERNAL(name, fn)                                       \
   static ivan::ivan_module _ivan_module_##name = {#name, fn};                  \
   void _ivan_register_##name() {                                               \
     ivan_module_register(&_ivan_module_##name);                                \
   }
-
-template <typename TypeName>
-TypeName* Unwrap(v8::Local<v8::Object> object) {
-  CHECK_EQ(false, object.IsEmpty());
-  CHECK_GT(object->InternalFieldCount(), 0);
-  void* pointer = object->GetAlignedPointerFromInternalField(0);
-  return static_cast<TypeName*>(pointer);
-}
 
 #define ASSIGN_OR_RETURN_UNWRAP(ptr, obj, ...)                                 \
   do {                                                                         \
