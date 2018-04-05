@@ -143,8 +143,9 @@ int main(int argc, char* argv[]) {
     Local<Context> context = Context::New(isolate);
     Context::Scope context_scope(context);
 
-    context->SetEmbedderData(ivan::EmbedderKeys::kBindingCache,
-        Object::New(isolate));
+    context->SetAlignedPointerInEmbedderData(ivan::EmbedderKeys::kModuleData, nullptr);
+
+    context->SetEmbedderData(ivan::EmbedderKeys::kBindingCache, Object::New(isolate));
 
     Local<Object> process = Object::New(isolate);
     Local<Array> pargv = Array::New(isolate, argc);
