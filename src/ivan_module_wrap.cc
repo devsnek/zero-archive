@@ -109,12 +109,12 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
   Local<Context> context;
   Local<Integer> line_offset;
   Local<Integer> column_offset;
-  Local<Function> import_module_dynamically;
   Local<Function> initialize_import_meta;
+  Local<Function> import_module_dynamically;
 
   if (argc == 7) {
     // new ModuleWrap(source, url, context?, lineOffset, columnOffset,
-    //                importModuleDynamically?, initializeImportMeta?)
+    //                initializeImportMeta?, importModuleDynamically?)
     if (args[2]->IsUndefined()) {
       context = that->CreationContext();
     } else {
@@ -134,11 +134,12 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
 
     if (!args[5]->IsUndefined()) {
       CHECK(args[5]->IsFunction());
-      import_module_dynamically = args[5].As<Function>();
+      initialize_import_meta = args[6].As<Function>();
     }
+
     if (!args[6]->IsUndefined()) {
       CHECK(args[6]->IsFunction());
-      initialize_import_meta = args[6].As<Function>();
+      import_module_dynamically = args[5].As<Function>();
     }
   } else {
     // new ModuleWrap(source, url)
@@ -180,29 +181,11 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
   ModuleWrap* obj = new ModuleWrap(isolate, that, module, url);
   obj->context_.Reset(isolate, context);
 
-  Local<String> initialize_import_meta_string =
-      IVAN_STRING(isolate, "initializeImportMeta");
-  Local<String> import_module_dynamically_string =
-      IVAN_STRING(isolate, "importModuleDynamically");
+  if (!initialize_import_meta.IsEmpty())
+    obj->initialize_import_meta.Reset(isolate, initialize_import_meta);
 
-  if (!initialize_import_meta.IsEmpty()) {
-    if (!that->Set(context, initialize_import_meta_string,
-          initialize_import_meta).FromMaybe(false))
-      return;
-  } else if (!that->Set(context, initialize_import_meta_string,
-        Undefined(isolate)).FromMaybe(false)) {
-    return;
-  }
-
-  if (!import_module_dynamically.IsEmpty()) {
-    if (!that->Set(context, import_module_dynamically_string,
-          import_module_dynamically).FromMaybe(false))
-      return;
-  } else if (!that->Set(context, import_module_dynamically_string,
-        Undefined(isolate)).FromMaybe(false)) {
-    return;
-  }
-
+  if (!import_module_dynamically.IsEmpty())
+    obj->import_module_dynamically.Reset(isolate, import_module_dynamically);
 
   host_defined_options->Set(0,
       Integer::New(isolate, ModuleWrap::SourceType::kModule));
@@ -224,23 +207,24 @@ void ModuleWrap::Link(const FunctionCallbackInfo<Value>& args) {
 
   CHECK_EQ(args.Length(), 1);
   CHECK(args[0]->IsFunction());
+  Local<Function> resolver_arg = args[0].As<Function>();
 
   Local<Object> that = args.This();
 
   ModuleWrap* obj;
   ASSIGN_OR_RETURN_UNWRAP(&obj, that);
 
+  Local<Module> module = obj->module_.Get(isolate);
+  Local<Context> context = obj->context_.Get(isolate);
+
+  Local<Array> promises = Array::New(
+      isolate, module->GetModuleRequestsLength());
+
+  args.GetReturnValue().Set(promises);
+
   if (obj->linked_)
     return;
   obj->linked_ = true;
-
-  Local<Function> resolver_arg = args[0].As<Function>();
-
-  Local<Context> mod_context = obj->context_.Get(isolate);
-  Local<Module> module = obj->module_.Get(isolate);
-
-  Local<Array> promises = Array::New(isolate,
-                                     module->GetModuleRequestsLength());
 
   // call the dependency resolve callbacks
   for (int i = 0; i < module->GetModuleRequestsLength(); i++) {
@@ -253,7 +237,7 @@ void ModuleWrap::Link(const FunctionCallbackInfo<Value>& args) {
     };
 
     MaybeLocal<Value> maybe_resolve_return_value =
-        resolver_arg->Call(mod_context, that, 1, argv);
+        resolver_arg->Call(context, that, 1, argv);
     if (maybe_resolve_return_value.IsEmpty()) {
       return;
     }
@@ -265,22 +249,20 @@ void ModuleWrap::Link(const FunctionCallbackInfo<Value>& args) {
     Local<Promise> resolve_promise = resolve_return_value.As<Promise>();
     obj->resolve_cache_[specifier_std].Reset(isolate, resolve_promise);
 
-    promises->Set(mod_context, i, resolve_promise).FromJust();
+    promises->Set(context, i, resolve_promise).FromJust();
   }
-
-  args.GetReturnValue().Set(promises);
 }
 
 void ModuleWrap::Instantiate(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   ModuleWrap* obj;
   ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
+
   Local<Context> context = obj->context_.Get(isolate);
   Local<Module> module = obj->module_.Get(isolate);
 
   TryCatch try_catch(isolate);
-  Maybe<bool> ok =
-      module->InstantiateModule(context, ModuleWrap::ResolveCallback);
+  Maybe<bool> ok = module->InstantiateModule(context, ModuleWrap::ResolveCallback);
 
   // clear resolve cache on instantiate
   obj->resolve_cache_.clear();
@@ -301,47 +283,9 @@ void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
   Local<Context> context = obj->context_.Get(isolate);
   Local<Module> module = obj->module_.Get(isolate);
 
-  // Environment::ShouldNotAbortOnUncaughtScope no_abort_scope(env);
-
   TryCatch try_catch(isolate);
 
-  // module.evaluate(timeout, breakOnSigint)
-  CHECK_EQ(args.Length(), 2);
-
-  CHECK(args[0]->IsNumber());
-  int64_t timeout = args[0]->IntegerValue(context).FromJust();
-
-  CHECK(args[1]->IsBoolean());
-  bool break_on_sigint = args[1]->IsTrue();
-
-  bool timed_out = false;
-  bool received_signal = false;
-  MaybeLocal<Value> result;
-  if (break_on_sigint && timeout != -1) {
-    // Watchdog wd(isolate, timeout, &timed_out);
-    // SigintWatchdog swd(isolate, &received_signal);
-    result = module->Evaluate(context);
-  } else if (break_on_sigint) {
-    // SigintWatchdog swd(isolate, &received_signal);
-    result = module->Evaluate(context);
-  } else if (timeout != -1) {
-    // Watchdog wd(isolate, timeout, &timed_out);
-    result = module->Evaluate(context);
-  } else {
-    result = module->Evaluate(context);
-  }
-
-  if (timed_out || received_signal) {
-    // It is possible that execution was terminated by another timeout in
-    // which this timeout is nested, so check whether one of the watchdogs
-    // from this invocation is responsible for termination.
-    if (timed_out) {
-      IVAN_THROW_EXCEPTION(isolate, "Script execution timed out.");
-    } else if (received_signal) {
-      IVAN_THROW_EXCEPTION(isolate, "Script execution interrupted.");
-    }
-    isolate->CancelTerminateExecution();
-  }
+  MaybeLocal<Value> result = module->Evaluate(context);
 
   if (try_catch.HasCaught()) {
     try_catch.ReThrow();
@@ -476,16 +420,13 @@ static MaybeLocal<Promise> ImportModuleDynamically(
   if (host_defined_options->Length() == 2) {
     int type = host_defined_options->Get(0).As<Integer>()->Value();
     if (type == ModuleWrap::SourceType::kScript) {
-      // int id = host_defined_options->Get(1).As<Integer>()->Value();
-      // contextify::ContextifyScript* wrap =
-      //     contextify::ContextifyScript::GetFromID(context, id);
-      // if (wrap != nullptr)
-      //   import_args[2] = wrap->object();
+      // unimplemented
     } else if (type == ModuleWrap::SourceType::kModule) {
       int id = host_defined_options->Get(1).As<Integer>()->Value();
       ModuleWrap* wrap = ModuleWrap::GetFromID(context, id);
-      if (wrap != nullptr)
-        import_args[2] = wrap->object();
+      CHECK_NE(wrap, nullptr);
+      if (!wrap->import_module_dynamically.IsEmpty())
+        import_args[2] = wrap->import_module_dynamically.Get(iso);
     }
   }
 
@@ -522,9 +463,12 @@ void ModuleWrap::HostInitializeImportMetaObjectCallback(
   if (module_wrap == nullptr)
     return;
 
-  Local<Object> wrap = module_wrap->object();
   Local<Function> callback = GetInitializeImportMetaObjectCallback(context);
-  Local<Value> args[] = { wrap, meta };
+  Local<Value> args[] = { meta, Undefined(isolate) };
+
+  if (!module_wrap->initialize_import_meta.IsEmpty())
+    args[1] = module_wrap->initialize_import_meta.Get(isolate);
+
   TryCatch try_catch(isolate);
   USE(callback->Call(context, Undefined(isolate), arraysize(args), args));
   if (try_catch.HasCaught())

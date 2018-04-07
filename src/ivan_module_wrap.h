@@ -31,6 +31,9 @@ class ModuleWrap : public BaseObject {
 
   int id;
 
+  Persistent<v8::Function> initialize_import_meta;
+  Persistent<v8::Function> import_module_dynamically;
+
  private:
   ModuleWrap(v8::Isolate* isolate,
              v8::Local<v8::Object> object,
