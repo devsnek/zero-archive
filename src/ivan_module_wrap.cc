@@ -91,36 +91,7 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
   CHECK(args[1]->IsString());
   Local<String> url = args[1].As<String>();
 
-  Local<Context> context;
-  Local<Integer> line_offset;
-  Local<Integer> column_offset;
-
-  context = that->CreationContext();
-
-  if (argc == 5) {
-    // new ModuleWrap(source, url, context?, lineOffset, columnOffset)
-    // if (args[2]->IsUndefined()) {
-    //   context = that->CreationContext();
-    // } else {
-    //   CHECK(args[2]->IsObject());
-    //   ContextifyContext* sandbox =
-    //       ContextifyContext::ContextFromContextifiedSandbox(
-    //           env, args[2].As<Object>());
-    //   CHECK_NE(sandbox, nullptr);
-    //   context = sandbox->context();
-    // }
-
-    CHECK(args[3]->IsNumber());
-    line_offset = args[3].As<Integer>();
-
-    CHECK(args[4]->IsNumber());
-    column_offset = args[4].As<Integer>();
-  } else {
-    // new ModuleWrap(source, url)
-    // context = that->CreationContext();
-    line_offset = Integer::New(isolate, 0);
-    column_offset = Integer::New(isolate, 0);
-  }
+  Local<Context> context = that->CreationContext();
 
   TryCatch try_catch(isolate);
   Local<Module> module;
@@ -130,8 +101,8 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
   // compile
   {
     ScriptOrigin origin(url,
-                        line_offset,                          // line offset
-                        column_offset,                        // column offset
+                        Integer::New(isolate, 0),             // line offset
+                        Integer::New(isolate, 0),             // column offset
                         False(isolate),                       // is cross origin
                         Local<Integer>(),                     // script id
                         Local<Value>(),                       // source map URL
