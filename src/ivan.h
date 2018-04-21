@@ -65,13 +65,10 @@ inline void IVAN_SET_PROTO_METHOD(
     const char* name,
     v8::FunctionCallback callback) {
   v8::Local<v8::Signature> signature = v8::Signature::New(isolate, that);
-  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(
-      isolate, callback, v8::Local<v8::Value>(), signature);
-  const v8::NewStringType type = v8::NewStringType::kInternalized;
-  v8::Local<v8::String> name_string =
-    v8::String::NewFromUtf8(isolate, name, type).ToLocalChecked();
+  v8::Local<v8::FunctionTemplate> t =
+    v8::FunctionTemplate::New(isolate, callback, v8::Local<v8::Value>(), signature);
+  v8::Local<v8::String> name_string = IVAN_STRING(isolate, name);
   that->PrototypeTemplate()->Set(name_string, t);
-  t->SetClassName(name_string);
 }
 
 #define IVAN_THROW_EXCEPTION(isolate, message) \
@@ -105,9 +102,6 @@ void ivan_module_register(void*);
 
 enum EmbedderKeys {
   kBindingCache,
-  kInitializeImportMetaObjectCallback,
-  kImportModuleDynamicallyCallback,
-  kModuleData,
 };
 
 }  // namespace ivan

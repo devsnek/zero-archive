@@ -126,7 +126,6 @@ int main(int argc, char* argv[]) {
       ArrayBuffer::Allocator::NewDefaultAllocator();
   Isolate* isolate = Isolate::New(create_params);
 
-  // TODO(devsnek): change to kExplicit
   isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
 
 #define V(name) _ivan_register_##name()
@@ -142,8 +141,6 @@ int main(int argc, char* argv[]) {
 
     Local<Context> context = Context::New(isolate);
     Context::Scope context_scope(context);
-
-    context->SetAlignedPointerInEmbedderData(ivan::EmbedderKeys::kModuleData, nullptr);
 
     context->SetEmbedderData(ivan::EmbedderKeys::kBindingCache, Object::New(isolate));
 
@@ -172,6 +169,7 @@ int main(int argc, char* argv[]) {
             context, Undefined(isolate), argc, args));
       if (try_catch.HasCaught())
         ivan::errors::ReportException(isolate, &try_catch);
+      isolate->RunMicrotasks();
     }
   }
 

@@ -1,4 +1,4 @@
-deps
+deps/v8
 build
 ivan
 .ninja_deps

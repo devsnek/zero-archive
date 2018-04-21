@@ -71,4 +71,4 @@ class BaseObject {
 
 }  // namespace ivan
 
-#endif // SRC_BASE_OBJECT_H_
+#endif  // SRC_BASE_OBJECT_H_

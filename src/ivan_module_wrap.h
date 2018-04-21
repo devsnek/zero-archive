@@ -5,34 +5,21 @@
 #include <string>
 #include <vector>
 #include "base_object-inl.h"
-#include "persistent.h"
-#include "ivan.h"
 
 namespace ivan {
 namespace loader {
 
 class ModuleWrap : public BaseObject {
  public:
-  enum SourceType { kScript, kModule };
-
-  struct ContextModuleData {
-    std::unordered_map<int, ModuleWrap*> id_to_module_wrap_map;
-    std::unordered_multimap<int, ModuleWrap*> module_to_module_wrap_map;
-    std::unordered_map<int, void*> id_to_script_wrap_map;
-  };
-
-  static void Initialize(v8::Isolate*, v8::Local<v8::Object>);
+  static void Initialize(v8::Isolate* isolate,
+                         v8::Local<v8::Object> target);
   static void HostInitializeImportMetaObjectCallback(
       v8::Local<v8::Context> context,
       v8::Local<v8::Module> module,
       v8::Local<v8::Object> meta);
-  static ModuleWrap* GetFromID(v8::Local<v8::Context>, int);
-  static ContextModuleData* GetModuleData(v8::Local<v8::Context>);
+  static ModuleWrap* GetFromID(int);
 
-  int id;
-
-  Persistent<v8::Function> initialize_import_meta;
-  Persistent<v8::Function> import_module_dynamically;
+  inline int GetID() { return id_; }
 
  private:
   ModuleWrap(v8::Isolate* isolate,
@@ -60,31 +47,20 @@ class ModuleWrap : public BaseObject {
       v8::Local<v8::Context> context,
       v8::Local<v8::String> specifier,
       v8::Local<v8::Module> referrer);
-  static ModuleWrap* GetFromModule(
-      v8::Local<v8::Context>,
-      v8::Local<v8::Module>);
+  static v8::MaybeLocal<v8::Promise> ImportModuleDynamically(
+      v8::Local<v8::Context> context,
+      v8::Local<v8::ScriptOrModule> referrer,
+      v8::Local<v8::String> specifier);
+  static ModuleWrap* GetFromModule(v8::Local<v8::Module>);
 
-  inline static void SetImportModuleDynamicallyCallback(
-      v8::Local<v8::Context> context, v8::Local<v8::Function> callback) {
-    context->SetEmbedderData(EmbedderKeys::kImportModuleDynamicallyCallback, callback);
-  }
-  inline static v8::Local<v8::Function> GetImportModuleDynamicallyCallback(
-      v8::Local<v8::Context> context) {
-    return context->GetEmbedderData(EmbedderKeys::kImportModuleDynamicallyCallback)
-        .As<v8::Function>();
-  }
-  inline static void SetInitializeImportMetaObjectCallback(
-      v8::Local<v8::Context> context, v8::Local<v8::Function> callback) {
-    context->SetEmbedderData(EmbedderKeys::kInitializeImportMetaObjectCallback, callback);
-  }
-  inline static v8::Local<v8::Function> GetInitializeImportMetaObjectCallback(
-      v8::Local<v8::Context> context) {
-    return context->GetEmbedderData(EmbedderKeys::kInitializeImportMetaObjectCallback)
-        .As<v8::Function>();
-  }
+  static Persistent<v8::Function> host_initialize_import_meta_object_callback;
+  static Persistent<v8::Function> host_import_module_dynamically_callback;
+  static std::unordered_map<int, loader::ModuleWrap*> id_to_module_wrap_map;
+  static std::unordered_multimap<int, loader::ModuleWrap*> module_to_module_wrap_map;
 
   static int Identity_;
 
+  int id_;
   Persistent<v8::Module> module_;
   Persistent<v8::String> url_;
   bool linked_ = false;

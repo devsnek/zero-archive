@@ -14,7 +14,6 @@ using v8::HandleScope;
 using v8::Integer;
 using v8::IntegrityLevel;
 using v8::Isolate;
-using v8::JSON;
 using v8::Just;
 using v8::Local;
 using v8::Maybe;
@@ -32,19 +31,10 @@ using v8::Undefined;
 using v8::Value;
 
 int ModuleWrap::Identity_ = 0;
-
-ModuleWrap::ContextModuleData* ModuleWrap::GetModuleData(Local<Context> context) {
-  ContextModuleData* module_data =
-      reinterpret_cast<ContextModuleData*>(
-          context->GetAlignedPointerFromEmbedderData(
-              EmbedderKeys::kModuleData));
-  if (module_data == nullptr) {
-    module_data = new ContextModuleData;
-    context->SetAlignedPointerInEmbedderData(
-        EmbedderKeys::kModuleData, module_data);
-  }
-  return module_data;
-}
+Persistent<v8::Function> ModuleWrap::host_initialize_import_meta_object_callback;
+Persistent<v8::Function> ModuleWrap::host_import_module_dynamically_callback;
+std::unordered_map<int, ModuleWrap*> ModuleWrap::id_to_module_wrap_map;
+std::unordered_multimap<int, ModuleWrap*> ModuleWrap::module_to_module_wrap_map;
 
 ModuleWrap::ModuleWrap(Isolate* isolate,
                        Local<Object> object,
@@ -52,38 +42,33 @@ ModuleWrap::ModuleWrap(Isolate* isolate,
                        Local<String> url) : BaseObject(isolate, object) {
   module_.Reset(isolate, module);
   url_.Reset(isolate, url);
-  id = ModuleWrap::Identity_++;
+  id_ = ModuleWrap::Identity_++;
 }
 
 ModuleWrap::~ModuleWrap() {
   HandleScope scope(isolate());
   Local<Module> module = module_.Get(isolate());
-  auto data = GetModuleData(isolate()->GetCurrentContext());
-  data->id_to_module_wrap_map.erase(id);
-  auto range = data->module_to_module_wrap_map.equal_range(
+  id_to_module_wrap_map.erase(id_);
+  auto range = module_to_module_wrap_map.equal_range(
       module->GetIdentityHash());
   for (auto it = range.first; it != range.second; ++it) {
     if (it->second == this) {
-      data->module_to_module_wrap_map.erase(it);
+      module_to_module_wrap_map.erase(it);
       break;
     }
   }
 }
 
-ModuleWrap* ModuleWrap::GetFromID(Local<Context> context, int id) {
-  auto map = GetModuleData(context)->id_to_module_wrap_map;
-  auto module_wrap_it = map.find(id);
-  if (module_wrap_it == map.end())
+ModuleWrap* ModuleWrap::GetFromID(int id) {
+  auto module_wrap_it = id_to_module_wrap_map.find(id);
+  if (module_wrap_it == id_to_module_wrap_map.end())
     return nullptr;
 
   return module_wrap_it->second;
 }
 
-ModuleWrap* ModuleWrap::GetFromModule(Local<Context> context,
-                                      Local<Module> module) {
-  auto map = GetModuleData(context)->module_to_module_wrap_map;
-  auto range = map.equal_range(
-      module->GetIdentityHash());
+ModuleWrap* ModuleWrap::GetFromModule(Local<Module> module) {
+  auto range = module_to_module_wrap_map.equal_range(module->GetIdentityHash());
   for (auto it = range.first; it != range.second; ++it) {
     if (it->second->module_ == module)
       return it->second;
@@ -109,47 +94,37 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
   Local<Context> context;
   Local<Integer> line_offset;
   Local<Integer> column_offset;
-  Local<Function> initialize_import_meta;
-  Local<Function> import_module_dynamically;
 
-  if (argc == 7) {
-    // new ModuleWrap(source, url, context?, lineOffset, columnOffset,
-    //                initializeImportMeta?, importModuleDynamically?)
-    if (args[2]->IsUndefined()) {
-      context = that->CreationContext();
-    } else {
-      // CHECK(args[2]->IsObject());
-      // ContextifyContext* sandbox =
-      //     ContextifyContext::ContextFromContextifiedSandbox(
-      //         env, args[2].As<Object>());
-      // CHECK_NE(sandbox, nullptr);
-      // context = sandbox->context();
-    }
+  context = that->CreationContext();
+
+  if (argc == 5) {
+    // new ModuleWrap(source, url, context?, lineOffset, columnOffset)
+    // if (args[2]->IsUndefined()) {
+    //   context = that->CreationContext();
+    // } else {
+    //   CHECK(args[2]->IsObject());
+    //   ContextifyContext* sandbox =
+    //       ContextifyContext::ContextFromContextifiedSandbox(
+    //           env, args[2].As<Object>());
+    //   CHECK_NE(sandbox, nullptr);
+    //   context = sandbox->context();
+    // }
 
     CHECK(args[3]->IsNumber());
     line_offset = args[3].As<Integer>();
 
     CHECK(args[4]->IsNumber());
     column_offset = args[4].As<Integer>();
-
-    if (!args[5]->IsUndefined()) {
-      CHECK(args[5]->IsFunction());
-      initialize_import_meta = args[6].As<Function>();
-    }
-
-    if (!args[6]->IsUndefined()) {
-      CHECK(args[6]->IsFunction());
-      import_module_dynamically = args[5].As<Function>();
-    }
   } else {
     // new ModuleWrap(source, url)
-    context = that->CreationContext();
+    // context = that->CreationContext();
     line_offset = Integer::New(isolate, 0);
     column_offset = Integer::New(isolate, 0);
   }
 
   TryCatch try_catch(isolate);
   Local<Module> module;
+
   Local<PrimitiveArray> host_defined_options = PrimitiveArray::New(isolate, 2);
 
   // compile
@@ -179,22 +154,14 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
     return;
 
   ModuleWrap* obj = new ModuleWrap(isolate, that, module, url);
-  obj->context_.Reset(isolate, context);
+  // obj->context_.Reset(isolate, context);
 
-  if (!initialize_import_meta.IsEmpty())
-    obj->initialize_import_meta.Reset(isolate, initialize_import_meta);
+  // host_defined_options->Set(0,
+  //     Integer::New(isolate, contextify::SourceType::kModule));
+  host_defined_options->Set(1, Integer::New(isolate, obj->GetID()));
 
-  if (!import_module_dynamically.IsEmpty())
-    obj->import_module_dynamically.Reset(isolate, import_module_dynamically);
-
-  host_defined_options->Set(0,
-      Integer::New(isolate, ModuleWrap::SourceType::kModule));
-  host_defined_options->Set(1, Integer::New(isolate, obj->id));
-
-  auto data = GetModuleData(context);
-
-  data->id_to_module_wrap_map[obj->id] = obj;
-  data->module_to_module_wrap_map.emplace(module->GetIdentityHash(), obj);
+  id_to_module_wrap_map[obj->GetID()] = obj;
+  module_to_module_wrap_map.emplace(module->GetIdentityHash(), obj);
 
   Wrap(that, obj);
 
@@ -207,24 +174,23 @@ void ModuleWrap::Link(const FunctionCallbackInfo<Value>& args) {
 
   CHECK_EQ(args.Length(), 1);
   CHECK(args[0]->IsFunction());
-  Local<Function> resolver_arg = args[0].As<Function>();
 
   Local<Object> that = args.This();
 
   ModuleWrap* obj;
   ASSIGN_OR_RETURN_UNWRAP(&obj, that);
 
-  Local<Module> module = obj->module_.Get(isolate);
-  Local<Context> context = obj->context_.Get(isolate);
-
-  Local<Array> promises = Array::New(
-      isolate, module->GetModuleRequestsLength());
-
-  args.GetReturnValue().Set(promises);
-
   if (obj->linked_)
     return;
   obj->linked_ = true;
+
+  Local<Function> resolver_arg = args[0].As<Function>();
+
+  Local<Context> context = isolate->GetCurrentContext(); // obj->context_.Get(isolate);
+  Local<Module> module = obj->module_.Get(isolate);
+
+  Local<Array> promises = Array::New(isolate,
+                                     module->GetModuleRequestsLength());
 
   // call the dependency resolve callbacks
   for (int i = 0; i < module->GetModuleRequestsLength(); i++) {
@@ -251,18 +217,19 @@ void ModuleWrap::Link(const FunctionCallbackInfo<Value>& args) {
 
     promises->Set(context, i, resolve_promise).FromJust();
   }
+
+  args.GetReturnValue().Set(promises);
 }
 
 void ModuleWrap::Instantiate(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   ModuleWrap* obj;
   ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
-
-  Local<Context> context = obj->context_.Get(isolate);
+  Local<Context> context = isolate->GetCurrentContext(); // obj->context_.Get(isolate);
   Local<Module> module = obj->module_.Get(isolate);
-
   TryCatch try_catch(isolate);
-  Maybe<bool> ok = module->InstantiateModule(context, ModuleWrap::ResolveCallback);
+  Maybe<bool> ok =
+      module->InstantiateModule(context, ModuleWrap::ResolveCallback);
 
   // clear resolve cache on instantiate
   obj->resolve_cache_.clear();
@@ -280,7 +247,7 @@ void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   ModuleWrap* obj;
   ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
-  Local<Context> context = obj->context_.Get(isolate);
+  Local<Context> context = isolate->GetCurrentContext(); // obj->context_.Get(isolate);
   Local<Module> module = obj->module_.Get(isolate);
 
   TryCatch try_catch(isolate);
@@ -304,8 +271,8 @@ void ModuleWrap::Namespace(const FunctionCallbackInfo<Value>& args) {
 
   switch (module->GetStatus()) {
     default:
-      return IVAN_THROW_EXCEPTION(isolate,
-          "cannot get namespace, Module has not been instantiated");
+      return IVAN_THROW_EXCEPTION(
+          isolate, "cannot get namespace, Module has not been instantiated");
     case v8::Module::Status::kInstantiated:
     case v8::Module::Status::kEvaluating:
     case v8::Module::Status::kEvaluated:
@@ -361,7 +328,7 @@ MaybeLocal<Module> ModuleWrap::ResolveCallback(Local<Context> context,
                                                Local<Module> referrer) {
   Isolate* isolate = context->GetIsolate();
 
-  ModuleWrap* dependent = ModuleWrap::GetFromModule(context, referrer);
+  ModuleWrap* dependent = ModuleWrap::GetFromModule(referrer);
   if (dependent == nullptr) {
     IVAN_THROW_EXCEPTION(isolate, "linking error, unknown module");
     return MaybeLocal<Module>();
@@ -396,17 +363,14 @@ MaybeLocal<Module> ModuleWrap::ResolveCallback(Local<Context> context,
   return module->module_.Get(isolate);
 }
 
-
-static MaybeLocal<Promise> ImportModuleDynamically(
+MaybeLocal<Promise> ModuleWrap::ImportModuleDynamically(
     Local<Context> context,
     Local<v8::ScriptOrModule> referrer,
     Local<String> specifier) {
   Isolate* iso = context->GetIsolate();
   v8::EscapableHandleScope handle_scope(iso);
 
-  // TODO(devsnek): find place to keep dynamic import callback
-  return MaybeLocal<Promise>();
-  Local<Function> import_callback;
+  Local<Function> import_callback = host_import_module_dynamically_callback.Get(iso);
 
   Local<Value> import_args[] = {
     referrer->GetResourceName(),
@@ -418,16 +382,19 @@ static MaybeLocal<Promise> ImportModuleDynamically(
     referrer->GetHostDefinedOptions();
 
   if (host_defined_options->Length() == 2) {
-    int type = host_defined_options->Get(0).As<Integer>()->Value();
-    if (type == ModuleWrap::SourceType::kScript) {
-      // unimplemented
-    } else if (type == ModuleWrap::SourceType::kModule) {
+    // int type = host_defined_options->Get(0).As<Integer>()->Value();
+    // if (type == contextify::SourceType::kScript) {
+    //   int id = host_defined_options->Get(1).As<Integer>()->Value();
+    //   contextify::ContextifyScript* wrap =
+    //       contextify::ContextifyScript::GetFromID(id);
+    //   CHECK_NE(wrap, nullptr);
+    //   import_args[2] = wrap->object();
+    // } else if (type == contextify::SourceType::kModule) {
       int id = host_defined_options->Get(1).As<Integer>()->Value();
-      ModuleWrap* wrap = ModuleWrap::GetFromID(context, id);
+      ModuleWrap* wrap = ModuleWrap::GetFromID(id);
       CHECK_NE(wrap, nullptr);
-      if (!wrap->import_module_dynamically.IsEmpty())
-        import_args[2] = wrap->import_module_dynamically.Get(iso);
-    }
+      import_args[2] = wrap->object();
+    // }
   }
 
   MaybeLocal<Value> maybe_result = import_callback->Call(context,
@@ -449,28 +416,26 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
 
   CHECK_EQ(args.Length(), 1);
   CHECK(args[0]->IsFunction());
-
   Local<Function> import_callback = args[0].As<Function>();
-  SetImportModuleDynamicallyCallback(iso->GetCurrentContext(), import_callback);
-  iso->SetHostImportModuleDynamicallyCallback(ImportModuleDynamically);
+  host_import_module_dynamically_callback.Reset(iso, import_callback);
+
+  iso->SetHostImportModuleDynamicallyCallback(ModuleWrap::ImportModuleDynamically);
 }
 
 void ModuleWrap::HostInitializeImportMetaObjectCallback(
     Local<Context> context, Local<Module> module, Local<Object> meta) {
   Isolate* isolate = context->GetIsolate();
-  ModuleWrap* module_wrap = ModuleWrap::GetFromModule(context, module);
+  ModuleWrap* module_wrap = ModuleWrap::GetFromModule(module);
 
   if (module_wrap == nullptr)
     return;
 
-  Local<Function> callback = GetInitializeImportMetaObjectCallback(context);
-  Local<Value> args[] = { meta, Undefined(isolate) };
+  Local<Function> callback = host_initialize_import_meta_object_callback.Get(isolate);
 
-  if (!module_wrap->initialize_import_meta.IsEmpty())
-    args[1] = module_wrap->initialize_import_meta.Get(isolate);
+  Local<Value> args[] = { meta, module_wrap->object() };
 
   TryCatch try_catch(isolate);
-  USE(callback->Call(context, Undefined(isolate), arraysize(args), args));
+  USE(callback->Call(context, Undefined(isolate), 2, args));
   if (try_catch.HasCaught())
     try_catch.ReThrow();
 }
@@ -478,11 +443,12 @@ void ModuleWrap::HostInitializeImportMetaObjectCallback(
 void ModuleWrap::SetInitializeImportMetaObjectCallback(
     const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
+
   CHECK_EQ(args.Length(), 1);
   CHECK(args[0]->IsFunction());
-
   Local<Function> import_meta_callback = args[0].As<Function>();
-  SetInitializeImportMetaObjectCallback(isolate->GetCurrentContext(), import_meta_callback);
+  host_initialize_import_meta_object_callback.Reset(isolate, import_meta_callback);
+
   isolate->SetHostInitializeImportMetaObjectCallback(
       HostInitializeImportMetaObjectCallback);
 }
