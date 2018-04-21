@@ -10,8 +10,6 @@ v8::MaybeLocal<v8::Value> Internal(
     v8::Isolate* isolate, v8::Local<v8::String> filename, v8::Local<v8::String> code) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-  v8::TryCatch try_catch(isolate);
-
   v8::ScriptOrigin origin(filename, v8::Integer::New(isolate, 0), v8::Integer::New(isolate, 0));
   v8::ScriptCompiler::Source source(code, origin);
 
@@ -19,9 +17,6 @@ v8::MaybeLocal<v8::Value> Internal(
       isolate, &source, v8::ScriptCompiler::kNoCompileOptions).ToLocalChecked();
 
   v8::MaybeLocal<v8::Value> result = script->BindToCurrentContext()->Run(context);
-
-  if (try_catch.HasCaught())
-    try_catch.ReThrow();
 
   return result;
 }

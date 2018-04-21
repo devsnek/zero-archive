@@ -23,11 +23,13 @@ using v8::String;
 using v8::Value;
 using v8::V8;
 using v8::Platform;
+using v8::Promise;
 using v8::TryCatch;
 
 #define V(name) void _ivan_register_##name()
   V(util);
   V(module_wrap);
+  V(io);
 #undef V
 
 namespace ivan {
@@ -56,22 +58,22 @@ namespace js_debug {
 
 static void DebugLog(const FunctionCallbackInfo<Value>& info) {
   Isolate* isolate = info.GetIsolate();
-  HandleScope handle_scope(isolate);
 
   String::Utf8Value utf8(isolate, info[0].As<String>());
   bool prefix = info[1]->IsTrue();
 
-  fprintf(stdout, "%s%s\n", prefix ? "[IVAN] " : "", *utf8);
+  fprintf(stdout, "%s%s", prefix ? "[IVAN] " : "", *utf8);
+  fflush(stdout);
 }
 
 static void DebugError(const FunctionCallbackInfo<Value>& info) {
   Isolate* isolate = info.GetIsolate();
-  HandleScope handle_scope(isolate);
 
   String::Utf8Value utf8(isolate, info[0].As<String>());
   bool prefix = info[1]->IsTrue();
 
-  fprintf(stderr, "%s%s\n", prefix ? "[IVAN] " : "", *utf8);
+  fprintf(stderr, "%s%s", prefix ? "[IVAN] " : "", *utf8);
+  fflush(stderr);
 }
 
 static void Init(Isolate* isolate, Local<Object> exports) {
@@ -108,8 +110,12 @@ static void Bindings(const FunctionCallbackInfo<Value>& info) {
     ivan::blobs::DefineJavaScript(isolate, exports);
   } else {
     ivan::ivan_module* mod = ivan::get_module(*request);
-    if (mod != nullptr)
+    if (mod != nullptr) {
       mod->im_function(isolate, exports);
+    } else {
+      IVAN_THROW_EXCEPTION(isolate, "unknown binding");
+      return;
+    }
   }
 
   USE(cache->Set(context, req, exports));
@@ -127,12 +133,24 @@ int main(int argc, char* argv[]) {
   Isolate* isolate = Isolate::New(create_params);
 
   isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
+  isolate->SetPromiseRejectCallback([](v8::PromiseRejectMessage message) {
+    Local<Promise> promise = message.GetPromise();
+    Isolate* isolate = promise->GetIsolate();
+    v8::PromiseRejectEvent event = message.GetEvent();
+
+    if (event == v8::kPromiseRejectWithNoHandler) {
+      String::Utf8Value str(isolate, message.GetValue());
+      printf("Unhandled Rejection: %s\n", *str);
+      fflush(stdout);
+    }
+  });
 
 #define V(name) _ivan_register_##name()
   V(debug);
   V(script_wrap);
   V(module_wrap);
   V(util);
+  V(io);
 #undef V
 
   {
@@ -159,17 +177,18 @@ int main(int argc, char* argv[]) {
     USE(context->Global()->Set(
           context, String::NewFromUtf8(isolate, "global"), context->Global()));
 
+    TryCatch try_catch(isolate);
+
     MaybeLocal<Value> ivan_fn_maybe = ivan::ScriptWrap::Internal(
         isolate, IVAN_STRING(isolate, "ivan"),
         ivan::blobs::MainSource(isolate));
+
     Local<Value> ivan_fn;
-    if (ivan_fn_maybe.ToLocal(&ivan_fn)) {
-      TryCatch try_catch(isolate);
-      USE(ivan_fn.As<Function>()->Call(
-            context, Undefined(isolate), argc, args));
-      if (try_catch.HasCaught())
-        ivan::errors::ReportException(isolate, &try_catch);
-    }
+    if (ivan_fn_maybe.ToLocal(&ivan_fn))
+      USE(ivan_fn.As<Function>()->Call(context, context->Global(), argc, args));
+
+    if (try_catch.HasCaught())
+      ivan::errors::ReportException(isolate, &try_catch);
   }
 
   isolate->Dispose();

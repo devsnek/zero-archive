@@ -91,10 +91,11 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
 
   Local<Context> context = that->CreationContext();
 
-  TryCatch try_catch(isolate);
   Local<Module> module;
 
   Local<PrimitiveArray> host_defined_options = PrimitiveArray::New(isolate, 2);
+
+  TryCatch try_catch(isolate);
 
   // compile
   {
@@ -111,14 +112,13 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
     Context::Scope context_scope(context);
     ScriptCompiler::Source source(source_text, origin);
     if (!ScriptCompiler::CompileModule(isolate, &source).ToLocal(&module)) {
-      CHECK(try_catch.HasCaught());
       try_catch.ReThrow();
       return;
     }
   }
 
   if (!that->Set(context, IVAN_STRING(isolate, "url"), url).FromMaybe(false)) {
-    try_catch.ReThrow();
+    // try_catch.ReThrow();
     return;
   }
 
@@ -196,20 +196,13 @@ void ModuleWrap::Instantiate(const FunctionCallbackInfo<Value>& args) {
   ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
   Local<Context> context = isolate->GetCurrentContext(); // obj->context_.Get(isolate);
   Local<Module> module = obj->module_.Get(isolate);
-  TryCatch try_catch(isolate);
-  Maybe<bool> ok =
-      module->InstantiateModule(context, ModuleWrap::ResolveCallback);
+  Maybe<bool> ok = module->InstantiateModule(context, ModuleWrap::ResolveCallback);
 
   // clear resolve cache on instantiate
   obj->resolve_cache_.clear();
 
-  if (!ok.FromMaybe(false)) {
-    CHECK(try_catch.HasCaught());
-    CHECK(!try_catch.Message().IsEmpty());
-    CHECK(!try_catch.Exception().IsEmpty());
-    try_catch.ReThrow();
+  if (!ok.FromMaybe(false))
     return;
-  }
 }
 
 void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
@@ -223,12 +216,10 @@ void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
 
   MaybeLocal<Value> result = module->Evaluate(context);
 
-  if (try_catch.HasCaught()) {
+  if (result.IsEmpty())
     try_catch.ReThrow();
-    return;
-  }
-
-  args.GetReturnValue().Set(result.ToLocalChecked());
+  else
+    args.GetReturnValue().Set(result.ToLocalChecked());
 }
 
 void ModuleWrap::GetNamespace(const FunctionCallbackInfo<Value>& args) {
