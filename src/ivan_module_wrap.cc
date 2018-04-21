@@ -31,17 +31,15 @@ using v8::Undefined;
 using v8::Value;
 
 int ModuleWrap::Identity_ = 0;
-Persistent<v8::Function> ModuleWrap::host_initialize_import_meta_object_callback;
-Persistent<v8::Function> ModuleWrap::host_import_module_dynamically_callback;
+v8::Persistent<v8::Function> ModuleWrap::host_initialize_import_meta_object_callback;
+v8::Persistent<v8::Function> ModuleWrap::host_import_module_dynamically_callback;
 std::unordered_map<int, ModuleWrap*> ModuleWrap::id_to_module_wrap_map;
 std::unordered_multimap<int, ModuleWrap*> ModuleWrap::module_to_module_wrap_map;
 
 ModuleWrap::ModuleWrap(Isolate* isolate,
                        Local<Object> object,
-                       Local<Module> module,
-                       Local<String> url) : BaseObject(isolate, object) {
+                       Local<Module> module) : BaseObject(isolate, object) {
   module_.Reset(isolate, module);
-  url_.Reset(isolate, url);
   id_ = ModuleWrap::Identity_++;
 }
 
@@ -83,7 +81,7 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
   Local<Object> that = args.This();
 
   const int argc = args.Length();
-  CHECK_GE(argc, 2);
+  CHECK_EQ(argc, 2);
 
   CHECK(args[0]->IsString());
   Local<String> source_text = args[0].As<String>();
@@ -114,17 +112,17 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
     ScriptCompiler::Source source(source_text, origin);
     if (!ScriptCompiler::CompileModule(isolate, &source).ToLocal(&module)) {
       CHECK(try_catch.HasCaught());
-      CHECK(!try_catch.Message().IsEmpty());
-      CHECK(!try_catch.Exception().IsEmpty());
       try_catch.ReThrow();
       return;
     }
   }
 
-  if (!that->Set(context, IVAN_STRING(isolate, "url"), url).FromMaybe(false))
+  if (!that->Set(context, IVAN_STRING(isolate, "url"), url).FromMaybe(false)) {
+    try_catch.ReThrow();
     return;
+  }
 
-  ModuleWrap* obj = new ModuleWrap(isolate, that, module, url);
+  ModuleWrap* obj = new ModuleWrap(isolate, that, module);
   // obj->context_.Reset(isolate, context);
 
   // host_defined_options->Set(0,
@@ -233,7 +231,7 @@ void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(result.ToLocalChecked());
 }
 
-void ModuleWrap::Namespace(const FunctionCallbackInfo<Value>& args) {
+void ModuleWrap::GetNamespace(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   ModuleWrap* obj;
   ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
@@ -427,14 +425,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
 void ModuleWrap::Initialize(Isolate* isolate, Local<Object> target) {
   Local<Context> context = isolate->GetCurrentContext();
 
-  Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate);
+  Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
   tpl->SetClassName(IVAN_STRING(isolate, "ModuleWrap"));
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
   IVAN_SET_PROTO_METHOD(isolate, tpl, "link", Link);
   IVAN_SET_PROTO_METHOD(isolate, tpl, "instantiate", Instantiate);
   IVAN_SET_PROTO_METHOD(isolate, tpl, "evaluate", Evaluate);
-  IVAN_SET_PROTO_METHOD(isolate, tpl, "namespace", Namespace);
+  IVAN_SET_PROTO_METHOD(isolate, tpl, "getNamespace", GetNamespace);
   IVAN_SET_PROTO_METHOD(isolate, tpl, "getStatus", GetStatus);
   IVAN_SET_PROTO_METHOD(isolate, tpl, "getError", GetError);
   IVAN_SET_PROTO_METHOD(isolate, tpl, "getStaticDependencySpecifiers",

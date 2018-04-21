@@ -30,11 +30,8 @@ static void Exposed(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Isolate* isolate = info.GetIsolate();
 
   v8::Local<v8::Value> val;
-  if (Internal(isolate, info[0].As<v8::String>(), info[1].As<v8::String>()).ToLocal(&val)) {
+  if (Internal(isolate, info[0].As<v8::String>(), info[1].As<v8::String>()).ToLocal(&val))
     info.GetReturnValue().Set(val);
-  } else {
-    info.GetReturnValue().Set(v8::Undefined(isolate));
-  }
 }
 
 void Init(v8::Isolate* isolate, v8::Local<v8::Object> exports) {

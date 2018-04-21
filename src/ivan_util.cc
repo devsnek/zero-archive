@@ -6,6 +6,7 @@ namespace util {
 
 using v8::Array;
 using v8::Local;
+using v8::Function;
 using v8::FunctionCallbackInfo;
 using v8::Object;
 using v8::Integer;
@@ -35,9 +36,20 @@ static void IsPromise(const FunctionCallbackInfo<Value>& info) {
   info.GetReturnValue().Set(info[0]->IsPromise());
 }
 
+static void RunMicrotasks(const FunctionCallbackInfo<Value>& info) {
+  info.GetIsolate()->RunMicrotasks();
+}
+
+static void EnqueueMicrotask(const FunctionCallbackInfo<Value>& info) {
+  CHECK(info[0]->IsFunction());
+  info.GetIsolate()->EnqueueMicrotask(info[0].As<Function>());
+}
+
 static void Init(Isolate* isolate, Local<Object> target) {
   IVAN_SET_METHOD(isolate, target, "getPromiseDetails", GetPromiseDetails);
   IVAN_SET_METHOD(isolate, target, "isPromise", IsPromise);
+  IVAN_SET_METHOD(isolate, target, "runMicrotasks", RunMicrotasks);
+  IVAN_SET_METHOD(isolate, target, "enqueueMicrotask", EnqueueMicrotask);
 
 #define V(name) \
   USE(target->Set(isolate->GetCurrentContext(),                                \

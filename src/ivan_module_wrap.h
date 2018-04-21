@@ -24,15 +24,14 @@ class ModuleWrap : public BaseObject {
  private:
   ModuleWrap(v8::Isolate* isolate,
              v8::Local<v8::Object> object,
-             v8::Local<v8::Module> module,
-             v8::Local<v8::String> url);
+             v8::Local<v8::Module> module);
   ~ModuleWrap();
 
   static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void Link(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void Instantiate(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void Evaluate(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Namespace(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void GetNamespace(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GetStatus(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GetError(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GetStaticDependencySpecifiers(
@@ -53,19 +52,18 @@ class ModuleWrap : public BaseObject {
       v8::Local<v8::String> specifier);
   static ModuleWrap* GetFromModule(v8::Local<v8::Module>);
 
-  static Persistent<v8::Function> host_initialize_import_meta_object_callback;
-  static Persistent<v8::Function> host_import_module_dynamically_callback;
+  static v8::Persistent<v8::Function> host_initialize_import_meta_object_callback;
+  static v8::Persistent<v8::Function> host_import_module_dynamically_callback;
   static std::unordered_map<int, loader::ModuleWrap*> id_to_module_wrap_map;
   static std::unordered_multimap<int, loader::ModuleWrap*> module_to_module_wrap_map;
 
   static int Identity_;
 
   int id_;
-  Persistent<v8::Module> module_;
-  Persistent<v8::String> url_;
+  v8::Persistent<v8::Module> module_;
   bool linked_ = false;
-  std::unordered_map<std::string, Persistent<v8::Promise>> resolve_cache_;
-  Persistent<v8::Context> context_;
+  std::unordered_map<std::string, v8::Persistent<v8::Promise>> resolve_cache_;
+  // Persistent<v8::Context> context_;
 };
 
 }  // namespace loader

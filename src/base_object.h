@@ -23,7 +23,6 @@
 #define SRC_BASE_OBJECT_H_
 
 #include <v8.h>
-#include "persistent.h"
 
 namespace ivan {
 
@@ -40,7 +39,7 @@ class BaseObject {
     return persistent_handle_.Get(isolate_);
   }
 
-  inline Persistent<v8::Object>& persistent() {
+  inline v8::Persistent<v8::Object>& persistent() {
     return persistent_handle_;
   }
 
@@ -65,7 +64,7 @@ class BaseObject {
   static inline void WeakCallback(
       const v8::WeakCallbackInfo<Type>& data);
 
-  Persistent<v8::Object> persistent_handle_;
+  v8::Persistent<v8::Object> persistent_handle_;
   v8::Isolate* isolate_;
 };
 

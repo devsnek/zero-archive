@@ -1,4 +1,4 @@
-cflags = -Wall -pthread -std=c++1z -ggdb -debug
+cflags = -Wall -pthread -std=c++1z
 includes = -I deps/v8/include
 
 v8_deps = deps/v8/out.gn/x64.release/obj/{libv8_monolith,third_party/icu/libicu{uc,i18n}}.a

@@ -169,7 +169,6 @@ int main(int argc, char* argv[]) {
             context, Undefined(isolate), argc, args));
       if (try_catch.HasCaught())
         ivan::errors::ReportException(isolate, &try_catch);
-      isolate->RunMicrotasks();
     }
   }
 
