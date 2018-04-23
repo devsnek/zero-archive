@@ -27,6 +27,7 @@ class TaskQueue {
   void Push(std::unique_ptr<T> task);
   std::unique_ptr<T> Pop();
   std::unique_ptr<T> BlockingPop();
+  std::queue<std::unique_ptr<T>> PopAll();
   void NotifyOfCompletion();
   void BlockingDrain();
   void Stop();
@@ -144,7 +145,7 @@ class IvanPlatform : public MultiIsolatePlatform {
   double CurrentClockTimeMillis() override;
   v8::TracingController* GetTracingController() override;
 
-  void FlushForegroundTasks(v8::Isolate* isolate);
+  bool FlushForegroundTasks(v8::Isolate* isolate);
 
   void RegisterIsolate(v8::Isolate* isolate, uv_loop_t* loop) override;
   void UnregisterIsolate(v8::Isolate* isolate) override;

@@ -94,7 +94,7 @@ void PerIsolatePlatformData::PostDelayedTask(
 }
 
 PerIsolatePlatformData::~PerIsolatePlatformData() {
-  FlushForegroundTasksInternal();
+  while (FlushForegroundTasksInternal()) {}
   CancelPendingDelayedTasks();
 
   uv_close(reinterpret_cast<uv_handle_t*>(flush_tasks_),
@@ -212,7 +212,11 @@ bool PerIsolatePlatformData::FlushForegroundTasksInternal() {
       });
     });
   }
-  while (std::unique_ptr<Task> task = foreground_tasks_.Pop()) {
+
+  std::queue<std::unique_ptr<Task>> tasks = foreground_tasks_.PopAll();
+  while (!tasks.empty()) {
+    std::unique_ptr<Task> task = std::move(tasks.front());
+    tasks.pop();
     did_work = true;
     RunForegroundTask(std::move(task));
   }
@@ -243,8 +247,8 @@ void IvanPlatform::CallDelayedOnForegroundThread(Isolate* isolate,
     std::unique_ptr<Task>(task), delay_in_seconds);
 }
 
-void IvanPlatform::FlushForegroundTasks(v8::Isolate* isolate) {
-  ForIsolate(isolate)->FlushForegroundTasksInternal();
+bool IvanPlatform::FlushForegroundTasks(v8::Isolate* isolate) {
+  return ForIsolate(isolate)->FlushForegroundTasksInternal();
 }
 
 void IvanPlatform::CancelPendingDelayedTasks(v8::Isolate* isolate) {
@@ -335,6 +339,14 @@ void TaskQueue<T>::Stop() {
   Mutex::ScopedLock scoped_lock(lock_);
   stopped_ = true;
   tasks_available_.Broadcast(scoped_lock);
+}
+
+template <class T>
+std::queue<std::unique_ptr<T>> TaskQueue<T>::PopAll() {
+  Mutex::ScopedLock scoped_lock(lock_);
+  std::queue<std::unique_ptr<T>> result;
+  result.swap(task_queue_);
+  return result;
 }
 
 } // namespace ivan

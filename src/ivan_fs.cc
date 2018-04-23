@@ -14,7 +14,7 @@ using v8::String;
 using v8::Value;
 
 namespace ivan {
-namespace io {
+namespace fs {
 
 class IvanReq {
  public:
@@ -192,7 +192,7 @@ static void Open(const FunctionCallbackInfo<Value>& args) {
 
 static void Close(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  uv_file file = args[0].As<Integer>()->Value();
+  uv_file file = args[0]->Int32Value();
 
   FS_INIT(isolate, args[1]->IsFalse());
   FS_CALL(args, close, req, file);
@@ -200,7 +200,7 @@ static void Close(const FunctionCallbackInfo<Value>& args) {
 
 static void FStat(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  uv_file file = args[0].As<Integer>()->Value();
+  uv_file file = args[0]->Int32Value();
 
   FS_INIT(isolate, args[1]->IsFalse());
   FS_CALL(args, fstat, req, file);
@@ -209,9 +209,9 @@ static void FStat(const FunctionCallbackInfo<Value>& args) {
 static void Read(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
-  uv_file file = args[0].As<Integer>()->Value();
-  int64_t len = args[1].As<Integer>()->Value();
-  int64_t offset = args[2].As<Integer>()->Value();
+  uv_file file = args[0]->Int32Value();
+  int64_t len = args[1]->Int32Value();
+  int64_t offset = args[2]->Int32Value();
 
   char* buffer = reinterpret_cast<char*>(malloc(len));
 
@@ -228,7 +228,7 @@ void Init(Isolate* isolate, Local<Object> exports) {
   IVAN_SET_METHOD(isolate, exports, "read", Read);
 }
 
-}  // namespace io
+}  // namespace fs
 }  // namespace ivan
 
-IVAN_REGISTER_INTERNAL(io, ivan::io::Init);
+IVAN_REGISTER_INTERNAL(fs, ivan::fs::Init);

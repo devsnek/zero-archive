@@ -30,7 +30,8 @@ using v8::TryCatch;
 #define V(name) void _ivan_register_##name()
   V(util);
   V(module_wrap);
-  V(io);
+  V(fs);
+  V(tty);
 #undef V
 
 namespace ivan {
@@ -155,7 +156,8 @@ int main(int argc, char** argv) {
   V(script_wrap);
   V(module_wrap);
   V(util);
-  V(io);
+  V(fs);
+  V(tty);
 #undef V
 
   {
