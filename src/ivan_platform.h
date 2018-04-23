@@ -112,38 +112,6 @@ class BackgroundTaskRunner : public v8::TaskRunner {
 
 class MultiIsolatePlatform;
 
-class IsolateData {
- public:
-  IsolateData(v8::Isolate* isolate, uv_loop_t* event_loop,
-              MultiIsolatePlatform* platform = nullptr,
-              uint32_t* zero_fill_field = nullptr);
-  ~IsolateData();
-
-  inline v8::Isolate* isolate() const {
-    return isolate_;
-  }
-
-  inline uv_loop_t* event_loop() const {
-    return event_loop_;
-  }
-
-  inline uint32_t* zero_fill_field() const {
-    return zero_fill_field_;
-  }
-
-  inline MultiIsolatePlatform* platform() const {
-    return platform_;
-  }
-
- private:
-  v8::Isolate* const isolate_;
-  uv_loop_t* const event_loop_;
-  uint32_t* const zero_fill_field_;
-  MultiIsolatePlatform* platform_;
-
-  DISALLOW_COPY_AND_ASSIGN(IsolateData);
-};
-
 class MultiIsolatePlatform : public v8::Platform {
  public:
   virtual ~MultiIsolatePlatform() { }
@@ -151,9 +119,8 @@ class MultiIsolatePlatform : public v8::Platform {
   virtual void CancelPendingDelayedTasks(v8::Isolate* isolate) = 0;
 
   // These will be called by the `IsolateData` creation/destruction functions.
-  virtual void RegisterIsolate(IsolateData* isolate_data,
-                               struct uv_loop_s* loop) = 0;
-  virtual void UnregisterIsolate(IsolateData* isolate_data) = 0;
+  virtual void RegisterIsolate(v8::Isolate* isolate, struct uv_loop_s* loop) = 0;
+  virtual void UnregisterIsolate(v8::Isolate* isolate) = 0;
 };
 
 class IvanPlatform : public MultiIsolatePlatform {
@@ -179,8 +146,8 @@ class IvanPlatform : public MultiIsolatePlatform {
 
   void FlushForegroundTasks(v8::Isolate* isolate);
 
-  void RegisterIsolate(IsolateData* isolate_data, uv_loop_t* loop) override;
-  void UnregisterIsolate(IsolateData* isolate_data) override;
+  void RegisterIsolate(v8::Isolate* isolate, uv_loop_t* loop) override;
+  void UnregisterIsolate(v8::Isolate* isolate) override;
 
   std::shared_ptr<v8::TaskRunner> GetBackgroundTaskRunner(
       v8::Isolate* isolate) override;

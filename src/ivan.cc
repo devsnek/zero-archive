@@ -135,7 +135,7 @@ int main(int argc, char** argv) {
       ArrayBuffer::Allocator::NewDefaultAllocator();
   Isolate* isolate = Isolate::New(create_params);
 
-  auto isolate_data = new ivan::IsolateData(isolate, uv_default_loop(), platform);
+  platform->RegisterIsolate(isolate, uv_default_loop());
 
   isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
   isolate->SetPromiseRejectCallback([](v8::PromiseRejectMessage message) {
@@ -207,10 +207,10 @@ int main(int argc, char** argv) {
       ivan::errors::ReportException(isolate, &try_catch);
   }
 
+  platform->UnregisterIsolate(isolate);
   isolate->Dispose();
   V8::Dispose();
   V8::ShutdownPlatform();
-  delete isolate_data;
   delete create_params.array_buffer_allocator;
   return 0;
 }

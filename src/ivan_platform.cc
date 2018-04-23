@@ -15,23 +15,6 @@ using v8::Platform;
 using v8::Task;
 using v8::TracingController;
 
-IsolateData::IsolateData(Isolate* isolate,
-                         uv_loop_t* event_loop,
-                         MultiIsolatePlatform* platform,
-                         uint32_t* zero_fill_field) :
-    isolate_(isolate),
-    event_loop_(event_loop),
-    zero_fill_field_(zero_fill_field),
-    platform_(platform) {
-  if (platform_ != nullptr)
-    platform_->RegisterIsolate(this, event_loop);
-}
-
-IsolateData::~IsolateData() {
-  if (platform_ != nullptr)
-    platform_->UnregisterIsolate(this);
-}
-
 static void BackgroundRunner(void* data) {
   TaskQueue<Task>* background_tasks = static_cast<TaskQueue<Task>*>(data);
   while (std::unique_ptr<Task> task = background_tasks->BlockingPop()) {
@@ -134,8 +117,7 @@ IvanPlatform::IvanPlatform(int thread_pool_size) {
   tracing_controller_.reset(controller);
 }
 
-void IvanPlatform::RegisterIsolate(IsolateData* isolate_data, uv_loop_t* loop) {
-  Isolate* isolate = isolate_data->isolate();
+void IvanPlatform::RegisterIsolate(Isolate* isolate, uv_loop_t* loop) {
   Mutex::ScopedLock lock(per_isolate_mutex_);
   std::shared_ptr<PerIsolatePlatformData> existing = per_isolate_[isolate];
   if (existing) {
@@ -146,8 +128,7 @@ void IvanPlatform::RegisterIsolate(IsolateData* isolate_data, uv_loop_t* loop) {
   }
 }
 
-void IvanPlatform::UnregisterIsolate(IsolateData* isolate_data) {
-  Isolate* isolate = isolate_data->isolate();
+void IvanPlatform::UnregisterIsolate(Isolate* isolate) {
   Mutex::ScopedLock lock(per_isolate_mutex_);
   std::shared_ptr<PerIsolatePlatformData> existing = per_isolate_[isolate];
   CHECK(existing);
