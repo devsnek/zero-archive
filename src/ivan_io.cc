@@ -17,7 +17,7 @@ namespace io {
 
 struct ivan_req_t {
   Isolate* isolate;
-  bool async;
+  bool sync;
   void* data;
   v8::Persistent<Promise::Resolver> resolver;
 };
@@ -137,11 +137,11 @@ void fs_cb(uv_fs_t* req) {
 
 #define FS_CALL(args, func, req, ...) {                                       \
   ivan_req_t* data = reinterpret_cast<ivan_req_t*>(req->data);                \
-  int ret = uv_fs_##func(uv_default_loop(), req, __VA_ARGS__, data->async ? fs_cb : NULL); \
+  int ret = uv_fs_##func(uv_default_loop(), req, __VA_ARGS__, data->sync ? NULL : fs_cb); \
   Isolate* isolate = args.GetIsolate();                                       \
   if (req->fs_type != UV_FS_ACCESS && ret < 0) {                              \
     IVAN_THROW_EXCEPTION(isolate, uv_strerror(req->result));                  \
-  } else if (!data->async) {                                                  \
+  } else if (data->sync) {                                                    \
     args.GetReturnValue().Set(normalize_req(isolate, req));                   \
   } else {                                                                    \
     Local<Promise::Resolver> resolver = Promise::Resolver::New(isolate);      \
@@ -155,7 +155,7 @@ static void Open(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   String::Utf8Value path(isolate, args[0].As<String>());
 
-  ivan_req_t* data = new ivan_req_t{isolate, args[1]->IsTrue()};
+  ivan_req_t* data = new ivan_req_t{isolate, args[1]->IsFalse()};
 
   uv_fs_t* req = new uv_fs_t;
   req->data = data;
@@ -167,7 +167,7 @@ static void Close(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   uv_file file = args[0].As<Integer>()->Value();
 
-  ivan_req_t* data = new ivan_req_t{isolate, args[1]->IsTrue()};
+  ivan_req_t* data = new ivan_req_t{isolate, args[1]->IsFalse()};
 
   uv_fs_t* req = new uv_fs_t;
   req->data = data;
@@ -179,7 +179,7 @@ static void FStat(const FunctionCallbackInfo<Value>& args) {
   uv_file file = args[0].As<Integer>()->Value();
 
 
-  ivan_req_t* data = new ivan_req_t{isolate, args[1]->IsTrue()};
+  ivan_req_t* data = new ivan_req_t{isolate, args[1]->IsFalse()};
 
   uv_fs_t* req = new uv_fs_t;
   req->data = data;
@@ -197,7 +197,7 @@ static void Read(const FunctionCallbackInfo<Value>& args) {
 
   uv_buf_t buf = uv_buf_init(buffer, len);
 
-  ivan_req_t* data = new ivan_req_t{isolate, args[3]->IsTrue(), buf.base};
+  ivan_req_t* data = new ivan_req_t{isolate, args[3]->IsFalse(), buf.base};
 
   uv_fs_t* req = new uv_fs_t;
   req->data = data;
