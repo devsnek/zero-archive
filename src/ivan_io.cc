@@ -8,6 +8,7 @@ using v8::Integer;
 using v8::Isolate;
 using v8::Local;
 using v8::Object;
+using v8::Persistent;
 using v8::Promise;
 using v8::String;
 using v8::Value;
@@ -15,18 +16,38 @@ using v8::Value;
 namespace ivan {
 namespace io {
 
-struct ivan_req_t {
-  Isolate* isolate;
-  bool sync;
-  void* data;
-  v8::Persistent<Promise::Resolver> resolver;
+class IvanReq {
+ public:
+  IvanReq(Isolate* isolate, bool sync = false, void* data = nullptr) :
+    isolate_(isolate), sync_(sync), data_(data) {}
+
+  ~IvanReq() {
+    isolate_ = nullptr;
+    resolver_.Reset();
+  }
+
+  inline Isolate* isolate() const { return isolate_; }
+  inline bool sync() const { return sync_; }
+  inline void* data() const { return data_; }
+  inline void resolver(Local<Promise::Resolver> r) {
+    resolver_.Reset(isolate_, r);
+  }
+  inline Local<Promise::Resolver> resolver() const {
+    return resolver_.Get(isolate_);
+  }
+
+ private:
+  Isolate* isolate_;
+  bool sync_;
+  void* data_;
+  Persistent<Promise::Resolver> resolver_;
 };
 
 Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
   if (req->fs_type == UV_FS_ACCESS)
     return v8::Boolean::New(isolate, req->result >= 0);
 
-  ivan_req_t* data = reinterpret_cast<ivan_req_t*>(req->data);
+  IvanReq* data = reinterpret_cast<IvanReq*>(req->data);
   Local<Context> context = isolate->GetCurrentContext();
 
   switch (req->fs_type) {
@@ -105,7 +126,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       return v8::String::NewFromUtf8(isolate, reinterpret_cast<char*>(req->ptr));
 
     case UV_FS_READ:
-      return v8::String::NewFromUtf8(isolate, (const char*) data->data,
+      return v8::String::NewFromUtf8(isolate, (const char*) data->data(),
           String::NewStringType::kNormalString, req->result);
 
     case UV_FS_SCANDIR:
@@ -123,43 +144,49 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
 }
 
 void fs_cb(uv_fs_t* req) {
-  ivan_req_t* data = reinterpret_cast<ivan_req_t*>(req->data);
-  Isolate* isolate = data->isolate;
+  IvanReq* data = reinterpret_cast<IvanReq*>(req->data);
+  Isolate* isolate = data->isolate();
   Local<Context> context = isolate->GetCurrentContext();
   if (req->fs_type != UV_FS_ACCESS && req->result < 0) {
     Local<Value> e = v8::Exception::Error(IVAN_STRING(isolate, uv_strerror(req->result)));
-    USE(data->resolver.Get(isolate)->Reject(context, e));
+    USE(data->resolver()->Reject(context, e));
   } else {
-    USE(data->resolver.Get(isolate)->Resolve(context, normalize_req(isolate, req)));
+    USE(data->resolver()->Resolve(context, normalize_req(isolate, req)));
   }
+  delete data;
+  delete req;
   isolate->RunMicrotasks();
 }
 
 #define FS_CALL(args, func, req, ...) {                                       \
-  ivan_req_t* data = reinterpret_cast<ivan_req_t*>(req->data);                \
-  int ret = uv_fs_##func(uv_default_loop(), req, __VA_ARGS__, data->sync ? NULL : fs_cb); \
+  IvanReq* data = reinterpret_cast<IvanReq*>(req->data);                      \
+  int ret = uv_fs_##func(uv_default_loop(), req, __VA_ARGS__, data->sync() ? NULL : fs_cb); \
   Isolate* isolate = args.GetIsolate();                                       \
   if (req->fs_type != UV_FS_ACCESS && ret < 0) {                              \
     IVAN_THROW_EXCEPTION(isolate, uv_strerror(req->result));                  \
-  } else if (data->sync) {                                                    \
+    delete data;                                                              \
+    delete req;                                                               \
+  } else if (data->sync()) {                                                  \
     args.GetReturnValue().Set(normalize_req(isolate, req));                   \
+    delete data;                                                              \
+    delete req;                                                               \
   } else {                                                                    \
     Local<Promise::Resolver> resolver = Promise::Resolver::New(isolate);      \
-    data->resolver.Reset(isolate, resolver);                                  \
+    data->resolver(resolver);                                                 \
     args.GetReturnValue().Set(resolver->GetPromise());                        \
   }                                                                           \
 }
 
+#define FS_INIT(...)                                                          \
+  IvanReq* data = new IvanReq(__VA_ARGS__);                                   \
+  uv_fs_t* req = new uv_fs_t;                                                 \
+  req->data = data;
 
 static void Open(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   String::Utf8Value path(isolate, args[0].As<String>());
 
-  ivan_req_t* data = new ivan_req_t{isolate, args[1]->IsFalse()};
-
-  uv_fs_t* req = new uv_fs_t;
-  req->data = data;
-
+  FS_INIT(isolate, args[1]->IsFalse());
   FS_CALL(args, open, req, *path, O_RDONLY, 0);
 }
 
@@ -167,10 +194,7 @@ static void Close(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   uv_file file = args[0].As<Integer>()->Value();
 
-  ivan_req_t* data = new ivan_req_t{isolate, args[1]->IsFalse()};
-
-  uv_fs_t* req = new uv_fs_t;
-  req->data = data;
+  FS_INIT(isolate, args[1]->IsFalse());
   FS_CALL(args, close, req, file);
 }
 
@@ -178,11 +202,7 @@ static void FStat(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   uv_file file = args[0].As<Integer>()->Value();
 
-
-  ivan_req_t* data = new ivan_req_t{isolate, args[1]->IsFalse()};
-
-  uv_fs_t* req = new uv_fs_t;
-  req->data = data;
+  FS_INIT(isolate, args[1]->IsFalse());
   FS_CALL(args, fstat, req, file);
 }
 
@@ -197,11 +217,7 @@ static void Read(const FunctionCallbackInfo<Value>& args) {
 
   uv_buf_t buf = uv_buf_init(buffer, len);
 
-  ivan_req_t* data = new ivan_req_t{isolate, args[3]->IsFalse(), buf.base};
-
-  uv_fs_t* req = new uv_fs_t;
-  req->data = data;
-
+  FS_INIT(isolate, args[3]->IsFalse(), buf.base);
   FS_CALL(args, read, req, file, &buf, 1, offset);
 }
 
