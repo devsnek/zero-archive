@@ -1,14 +1,14 @@
-cflags = -Wall -pthread -std=c++1z
-includes = -I deps/v8/include
+cflags = -Wall -std=c++14 -stdlib=libc++
+includes = -I deps/v8/include -luv
 
 v8_deps = deps/v8/out.gn/x64.release/obj/{libv8_monolith,third_party/icu/libicu{uc,i18n}}.a
 
 rule cc
-  command = g++ $cflags $includes $in -o $out $v8_deps
+  command = g++ $cflags $includes $v8_deps $in -o $out
 
 rule blob2c
   command = python tools/blob2c.py $out $in
 
-build ivan: cc src/ivan.cc src/ivan_util.cc src/ivan_io.cc src/ivan_module_wrap.cc build/ivan_blobs.cc || build/ivan_blobs.cc
+build ivan: cc src/ivan.cc src/ivan_util.cc src/ivan_io.cc src/ivan_module_wrap.cc src/ivan_platform.cc build/ivan_blobs.cc || build/ivan_blobs.cc
 
 build build/ivan_blobs.cc: blob2c lib/ivan.js lib/safe_globals.js lib/util.js lib/console.js lib/argparse.js lib/loader.js

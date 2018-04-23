@@ -52,11 +52,19 @@ TypeName* Unwrap(v8::Local<v8::Object> object) {
   return static_cast<TypeName*>(pointer);
 }
 
+#define UNREACHABLE() abort()
+
+#define DISALLOW_COPY_AND_ASSIGN(TypeName)                                    \
+  void operator=(const TypeName&) = delete;                                   \
+  void operator=(TypeName&&) = delete;                                        \
+  TypeName(const TypeName&) = delete;                                         \
+  TypeName(TypeName&&) = delete
+
 #define IVAN_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
 
-#define IVAN_SET_METHOD(isolate, target, name, fn)                             \
-  USE(target->Set(isolate->GetCurrentContext(),                                \
-                   IVAN_STRING(isolate, name),                                 \
+#define IVAN_SET_METHOD(isolate, target, name, fn)                            \
+  USE(target->Set(isolate->GetCurrentContext(),                               \
+                   IVAN_STRING(isolate, name),                                \
                    v8::FunctionTemplate::New(isolate, fn)->GetFunction()))
 
 inline void IVAN_SET_PROTO_METHOD(
@@ -74,18 +82,18 @@ inline void IVAN_SET_PROTO_METHOD(
 #define IVAN_THROW_EXCEPTION(isolate, message) \
   (void) isolate->ThrowException(v8::Exception::Error(IVAN_STRING(isolate, message)))
 
-#define IVAN_REGISTER_INTERNAL(name, fn)                                       \
-  static ivan::ivan_module _ivan_module_##name = {#name, fn};                  \
-  void _ivan_register_##name() {                                               \
-    ivan_module_register(&_ivan_module_##name);                                \
+#define IVAN_REGISTER_INTERNAL(name, fn)                                      \
+  static ivan::ivan_module _ivan_module_##name = {#name, fn};                 \
+  void _ivan_register_##name() {                                              \
+    ivan_module_register(&_ivan_module_##name);                               \
   }
 
-#define ASSIGN_OR_RETURN_UNWRAP(ptr, obj, ...)                                 \
-  do {                                                                         \
-    *ptr =                                                                     \
-        Unwrap<typename std::remove_reference<decltype(**ptr)>::type>(obj);    \
-    if (*ptr == nullptr)                                                       \
-      return __VA_ARGS__;                                                      \
+#define ASSIGN_OR_RETURN_UNWRAP(ptr, obj, ...)                                \
+  do {                                                                        \
+    *ptr =                                                                    \
+        Unwrap<typename std::remove_reference<decltype(**ptr)>::type>(obj);   \
+    if (*ptr == nullptr)                                                      \
+      return __VA_ARGS__;                                                     \
   } while (0)
 
 namespace ivan {

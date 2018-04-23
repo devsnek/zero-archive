@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <libplatform/libplatform.h>
 #include <v8.h>
+#include <uv.h>
 #include "ivan.h"
 #include "ivan_script_wrap.h"
 #include "ivan_blobs.h"
 #include "ivan_errors.h"
+#include "ivan_platform.h"
 
 using v8::Array;
 using v8::ArrayBuffer;
@@ -122,15 +123,19 @@ static void Bindings(const FunctionCallbackInfo<Value>& info) {
   info.GetReturnValue().Set(exports);
 }
 
-int main(int argc, char* argv[]) {
-  std::unique_ptr<Platform> platform = v8::platform::NewDefaultPlatform();
-  V8::InitializePlatform(platform.get());
+int main(int argc, char** argv) {
+  argv = uv_setup_args(argc, argv);
+
+  ivan::IvanPlatform* platform = new ivan::IvanPlatform(4);
+  V8::InitializePlatform(platform);
   V8::Initialize();
 
   Isolate::CreateParams create_params;
   create_params.array_buffer_allocator =
       ArrayBuffer::Allocator::NewDefaultAllocator();
   Isolate* isolate = Isolate::New(create_params);
+
+  auto isolate_data = new ivan::IsolateData(isolate, uv_default_loop(), platform);
 
   isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
   isolate->SetPromiseRejectCallback([](v8::PromiseRejectMessage message) {
@@ -187,6 +192,17 @@ int main(int argc, char* argv[]) {
     if (ivan_fn_maybe.ToLocal(&ivan_fn))
       USE(ivan_fn.As<Function>()->Call(context, context->Global(), argc, args));
 
+    uv_loop_t* event_loop = uv_default_loop();
+
+    bool more = false;
+    do {
+      uv_run(event_loop, UV_RUN_DEFAULT);
+
+      platform->DrainBackgroundTasks(isolate);
+
+      more = uv_loop_alive(event_loop);
+    } while (more == true);
+
     if (try_catch.HasCaught())
       ivan::errors::ReportException(isolate, &try_catch);
   }
@@ -194,6 +210,7 @@ int main(int argc, char* argv[]) {
   isolate->Dispose();
   V8::Dispose();
   V8::ShutdownPlatform();
+  delete isolate_data;
   delete create_params.array_buffer_allocator;
   return 0;
 }
