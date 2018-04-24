@@ -136,10 +136,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       return v8::Integer::New(isolate, -1);
 
     default:
-      // lua_pushnil(L);
-      // lua_pushfstring(L, "UNKNOWN FS TYPE %d\n", req->fs_type);
-      // return 2;
-      return v8::Integer::New(isolate, -1);
+      return v8::Exception::Error(IVAN_STRING(isolate, "UNKNOWN FS TYPE"));
   }
 }
 
@@ -151,7 +148,11 @@ void fs_cb(uv_fs_t* req) {
     Local<Value> e = v8::Exception::Error(IVAN_STRING(isolate, uv_strerror(req->result)));
     USE(data->resolver()->Reject(context, e));
   } else {
-    USE(data->resolver()->Resolve(context, normalize_req(isolate, req)));
+    Local<Value> v = normalize_req(isolate, req);
+    if (v->IsNativeError())
+      USE(data->resolver()->Reject(context, v));
+    else
+      USE(data->resolver()->Resolve(context, v));
   }
   delete data;
   delete req;
@@ -167,7 +168,11 @@ void fs_cb(uv_fs_t* req) {
     delete data;                                                              \
     delete req;                                                               \
   } else if (data->sync()) {                                                  \
-    args.GetReturnValue().Set(normalize_req(isolate, req));                   \
+    Local<Value> v = normalize_req(isolate, req);                             \
+    if (v->IsNativeError())                                                   \
+      isolate->ThrowException(v);                                             \
+    else                                                                      \
+      args.GetReturnValue().Set(v);                                           \
     delete data;                                                              \
     delete req;                                                               \
   } else {                                                                    \
