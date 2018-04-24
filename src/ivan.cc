@@ -124,8 +124,21 @@ static void Bindings(const FunctionCallbackInfo<Value>& info) {
   info.GetReturnValue().Set(exports);
 }
 
+static const char* v8_argv[] = {
+  "--harmony-class-fields",
+  "--harmony-static-fields",
+  "--harmony-private-fields",
+  "--harmony-public-fields",
+  "--harmony-subsume-json",
+  "--harmony-regexp-named-expressions",
+  "--harmony-do-expressions",
+};
+static int v8_argc = 7;
+
 int main(int argc, char** argv) {
   argv = uv_setup_args(argc, argv);
+
+  V8::SetFlagsFromCommandLine(&v8_argc, const_cast<char**>(v8_argv), true);
 
   ivan::IvanPlatform* platform = new ivan::IvanPlatform(4);
   V8::InitializePlatform(platform);
