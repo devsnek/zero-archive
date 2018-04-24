@@ -11,4 +11,4 @@ rule blob2c
 
 build ivan: cc src/ivan.cc src/ivan_util.cc src/ivan_fs.cc src/ivan_tty.cc src/ivan_module_wrap.cc src/ivan_platform.cc build/ivan_blobs.cc || build/ivan_blobs.cc
 
-build build/ivan_blobs.cc: blob2c lib/ivan.js lib/safe_globals.js lib/util.js lib/console.js lib/argparse.js lib/fs.js lib/loader.js
+build build/ivan_blobs.cc: blob2c lib/ivan.js lib/util.js lib/console.js lib/argparse.js lib/fs.js lib/loader.js lib/loader/translators.js lib/loader/module_job.js lib/loader/create_dynamic_module.js
