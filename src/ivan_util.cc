@@ -5,6 +5,8 @@ namespace ivan {
 namespace util {
 
 using v8::Array;
+using v8::Boolean;
+using v8::Context;
 using v8::Local;
 using v8::Function;
 using v8::FunctionCallbackInfo;
@@ -45,11 +47,47 @@ static void EnqueueMicrotask(const FunctionCallbackInfo<Value>& info) {
   info.GetIsolate()->EnqueueMicrotask(info[0].As<Function>());
 }
 
+static void SetPromiseRejectionHandler(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+
+  promise_reject_handler.Set(isolate, args[0].As<Function>());
+
+  isolate->SetPromiseRejectCallback([](v8::PromiseRejectMessage message) {
+    Local<Promise> promise = message.GetPromise();
+    Isolate* isolate = promise->GetIsolate();
+    v8::PromiseRejectEvent event = message.GetEvent();
+    Local<Context> context = isolate->GetCurrentContext();
+
+    Local<Value> value = message.GetValue();
+    if (value.IsEmpty())
+      value = v8::Undefined(isolate);
+
+    Local<Boolean> handled = Boolean::New(isolate, event == v8::kPromiseHandlerAddedAfterReject);
+    Local<Value> args[] = { promise, value, handled };
+
+    USE(promise_reject_handler.Get(isolate)->Call(context, v8::Undefined(isolate), 3, args));
+  });
+}
+
+static void SetNextTickHandler(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  next_tick_handler.Set(isolate, args[0].As<Function>());
+  printf("set the eternal, is empty: %d\n", next_tick_handler.IsEmpty());
+}
+
+static void SafeToString(const FunctionCallbackInfo<Value>& args) {
+  auto context = args.GetIsolate()->GetCurrentContext();
+  args.GetReturnValue().Set(args[0]->ToDetailString(context).ToLocalChecked());
+}
+
 static void Init(Isolate* isolate, Local<Object> target) {
   IVAN_SET_METHOD(isolate, target, "getPromiseDetails", GetPromiseDetails);
   IVAN_SET_METHOD(isolate, target, "isPromise", IsPromise);
   IVAN_SET_METHOD(isolate, target, "runMicrotasks", RunMicrotasks);
   IVAN_SET_METHOD(isolate, target, "enqueueMicrotask", EnqueueMicrotask);
+  IVAN_SET_METHOD(isolate, target, "setPromiseRejectionHandler", SetPromiseRejectionHandler);
+  IVAN_SET_METHOD(isolate, target, "setNextTickHandler", SetNextTickHandler);
+  IVAN_SET_METHOD(isolate, target, "safeToString", SafeToString);
 
 #define V(name) \
   USE(target->Set(isolate->GetCurrentContext(),                                \

@@ -112,6 +112,23 @@ enum EmbedderKeys {
   kBindingCache,
 };
 
+static v8::Eternal<v8::Function> promise_reject_handler;
+static v8::Eternal<v8::Function> next_tick_handler;
+
+class InternalCallbackScope {
+ public:
+  explicit InternalCallbackScope(v8::Isolate* isolate) : isolate_(isolate) {}
+
+  ~InternalCallbackScope() {
+    isolate_->RunMicrotasks();
+    printf("eternal is empty: %d\n", next_tick_handler.IsEmpty());
+    if (!next_tick_handler.IsEmpty())
+      next_tick_handler.Get(isolate_)->Call(v8::Undefined(isolate_), 0, nullptr);
+  }
+ private:
+  v8::Isolate* isolate_;
+};
+
 }  // namespace ivan
 
 #endif  // SRC_IVAN_H_

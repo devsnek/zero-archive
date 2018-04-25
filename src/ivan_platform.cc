@@ -153,8 +153,8 @@ size_t IvanPlatform::NumberOfAvailableBackgroundThreads() {
 void PerIsolatePlatformData::RunForegroundTask(std::unique_ptr<Task> task) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
+  InternalCallbackScope callback_scope(isolate);
   task->Run();
-  isolate->RunMicrotasks();
 }
 
 void PerIsolatePlatformData::DeleteFromScheduledTasks(DelayedTask* task) {
@@ -192,11 +192,9 @@ void IvanPlatform::DrainBackgroundTasks(Isolate* isolate) {
 bool PerIsolatePlatformData::FlushForegroundTasksInternal() {
   bool did_work = false;
 
-  while (std::unique_ptr<DelayedTask> delayed =
-      foreground_delayed_tasks_.Pop()) {
+  while (std::unique_ptr<DelayedTask> delayed = foreground_delayed_tasks_.Pop()) {
     did_work = true;
-    uint64_t delay_millis =
-        static_cast<uint64_t>(delayed->timeout + 0.5) * 1000;
+    uint64_t delay_millis = static_cast<uint64_t>(delayed->timeout + 0.5) * 1000;
     delayed->timer.data = static_cast<void*>(delayed.get());
     uv_timer_init(loop_, &delayed->timer);
     // Timers may not guarantee queue ordering of events with the same delay if

@@ -144,6 +144,7 @@ void fs_cb(uv_fs_t* req) {
   IvanReq* data = reinterpret_cast<IvanReq*>(req->data);
   Isolate* isolate = data->isolate();
   Local<Context> context = isolate->GetCurrentContext();
+  InternalCallbackScope callback_scope(isolate);
   if (req->fs_type != UV_FS_ACCESS && req->result < 0) {
     Local<Value> e = v8::Exception::Error(IVAN_STRING(isolate, uv_strerror(req->result)));
     USE(data->resolver()->Reject(context, e));
@@ -156,7 +157,6 @@ void fs_cb(uv_fs_t* req) {
   }
   delete data;
   delete req;
-  isolate->RunMicrotasks();
 }
 
 #define FS_CALL(args, func, req, ...) {                                       \

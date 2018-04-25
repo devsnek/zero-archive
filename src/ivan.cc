@@ -31,7 +31,6 @@ using v8::TryCatch;
   V(util);
   V(module_wrap);
   V(fs);
-  V(tty);
 #undef V
 
 namespace ivan {
@@ -84,7 +83,6 @@ static void Init(Isolate* isolate, Local<Object> exports) {
 }
 
 }  // namespace js_debug
-
 }  // namespace ivan
 
 IVAN_REGISTER_INTERNAL(debug, ivan::js_debug::Init);
@@ -151,18 +149,7 @@ int main(int argc, char** argv) {
 
   platform->RegisterIsolate(isolate, uv_default_loop());
 
-  isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
-  isolate->SetPromiseRejectCallback([](v8::PromiseRejectMessage message) {
-    Local<Promise> promise = message.GetPromise();
-    Isolate* isolate = promise->GetIsolate();
-    v8::PromiseRejectEvent event = message.GetEvent();
-
-    if (event == v8::kPromiseRejectWithNoHandler) {
-      String::Utf8Value str(isolate, message.GetValue());
-      printf("Unhandled Rejection: %s\n", *str);
-      fflush(stdout);
-    }
-  });
+  isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
 
 #define V(name) _ivan_register_##name()
   V(debug);
@@ -170,7 +157,6 @@ int main(int argc, char** argv) {
   V(module_wrap);
   V(util);
   V(fs);
-  V(tty);
 #undef V
 
   {
@@ -209,7 +195,7 @@ int main(int argc, char** argv) {
 
     uv_loop_t* event_loop = uv_default_loop();
 
-    bool more = false;
+    bool more = true;
     do {
       uv_run(event_loop, UV_RUN_DEFAULT);
 
