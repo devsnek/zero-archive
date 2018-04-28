@@ -413,41 +413,38 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
       HostInitializeImportMetaObjectCallback);
 }
 
-void ModuleWrap::Initialize(Isolate* isolate, Local<Object> target) {
-  Local<Context> context = isolate->GetCurrentContext();
+void ModuleWrap::Initialize(Local<Context> context, Local<Object> target) {
+  Isolate* isolate = context->GetIsolate();
 
   Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
   tpl->SetClassName(IVAN_STRING(isolate, "ModuleWrap"));
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
-  IVAN_SET_PROTO_METHOD(isolate, tpl, "link", Link);
-  IVAN_SET_PROTO_METHOD(isolate, tpl, "instantiate", Instantiate);
-  IVAN_SET_PROTO_METHOD(isolate, tpl, "evaluate", Evaluate);
-  IVAN_SET_PROTO_METHOD(isolate, tpl, "getNamespace", GetNamespace);
-  IVAN_SET_PROTO_METHOD(isolate, tpl, "getStatus", GetStatus);
-  IVAN_SET_PROTO_METHOD(isolate, tpl, "getError", GetError);
-  IVAN_SET_PROTO_METHOD(isolate, tpl, "getStaticDependencySpecifiers",
+  IVAN_SET_PROTO_METHOD(context, tpl, "link", Link);
+  IVAN_SET_PROTO_METHOD(context, tpl, "instantiate", Instantiate);
+  IVAN_SET_PROTO_METHOD(context, tpl, "evaluate", Evaluate);
+  IVAN_SET_PROTO_METHOD(context, tpl, "getNamespace", GetNamespace);
+  IVAN_SET_PROTO_METHOD(context, tpl, "getStatus", GetStatus);
+  IVAN_SET_PROTO_METHOD(context, tpl, "getError", GetError);
+  IVAN_SET_PROTO_METHOD(context, tpl, "getStaticDependencySpecifiers",
                       GetStaticDependencySpecifiers);
 
   target->Set(IVAN_STRING(isolate, "ModuleWrap"), tpl->GetFunction());
-  IVAN_SET_METHOD(isolate, target,
-                  "setImportModuleDynamicallyCallback",
-                  ModuleWrap::SetImportModuleDynamicallyCallback);
-  IVAN_SET_METHOD(isolate, target,
-                  "setInitializeImportMetaObjectCallback",
-                  ModuleWrap::SetInitializeImportMetaObjectCallback);
+  IVAN_SET_PROPERTY(context, target,
+                    "setImportModuleDynamicallyCallback",
+                    ModuleWrap::SetImportModuleDynamicallyCallback);
+  IVAN_SET_PROPERTY(context, target,
+                    "setInitializeImportMetaObjectCallback",
+                    ModuleWrap::SetInitializeImportMetaObjectCallback);
 
-#define V(name)                                                                \
-    target->Set(context,                                                       \
-      IVAN_STRING(isolate, #name),                                             \
-      Integer::New(isolate, Module::Status::name))                             \
-        .FromJust()
-    V(kUninstantiated);
-    V(kInstantiating);
-    V(kInstantiated);
-    V(kEvaluating);
-    V(kEvaluated);
-    V(kErrored);
+#define V(name) \
+  IVAN_SET_PROPERTY(context, target, #name, v8::Module::name);
+  V(kUninstantiated);
+  V(kInstantiating);
+  V(kInstantiated);
+  V(kEvaluating);
+  V(kEvaluated);
+  V(kErrored);
 #undef V
 }
 

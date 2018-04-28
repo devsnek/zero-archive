@@ -62,21 +62,47 @@ TypeName* Unwrap(v8::Local<v8::Object> object) {
 
 #define IVAN_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
 
-#define IVAN_SET_METHOD(isolate, target, name, fn)                            \
-  USE(target->Set(isolate->GetCurrentContext(),                               \
-                   IVAN_STRING(isolate, name),                                \
-                   v8::FunctionTemplate::New(isolate, fn)->GetFunction()))
-
 inline void IVAN_SET_PROTO_METHOD(
-    v8::Isolate* isolate,
+    v8::Local<v8::Context> context,
     v8::Local<v8::FunctionTemplate> that,
     const char* name,
     v8::FunctionCallback callback) {
+  v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Signature> signature = v8::Signature::New(isolate, that);
   v8::Local<v8::FunctionTemplate> t =
     v8::FunctionTemplate::New(isolate, callback, v8::Local<v8::Value>(), signature);
   v8::Local<v8::String> name_string = IVAN_STRING(isolate, name);
   that->PrototypeTemplate()->Set(name_string, t);
+}
+
+inline void IVAN_SET_PROPERTY(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::Object> target,
+    const char* name,
+    int32_t value) {
+  v8::Isolate* isolate = context->GetIsolate();
+  USE(target->Set(context,
+                  IVAN_STRING(isolate, name),
+                  v8::Integer::New(isolate, value)));
+}
+
+inline void IVAN_SET_PROPERTY(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::Object> target,
+    const char* name,
+    v8::Local<v8::FunctionTemplate> tpl) {
+  USE(target->Set(context,
+                  IVAN_STRING(context->GetIsolate(), name),
+                  tpl->GetFunction()));
+}
+
+inline void IVAN_SET_PROPERTY(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::Object> target,
+    const char* name,
+    v8::FunctionCallback fn) {
+  v8::Isolate* isolate = context->GetIsolate();
+  return IVAN_SET_PROPERTY(context, target, name, v8::FunctionTemplate::New(isolate, fn));
 }
 
 #define IVAN_THROW_EXCEPTION(isolate, message) \
@@ -98,7 +124,7 @@ inline void IVAN_SET_PROTO_METHOD(
 
 namespace ivan {
 
-typedef void (*IvanModuleCallback)(v8::Isolate*, v8::Local<v8::Object>);
+typedef void (*IvanModuleCallback)(v8::Local<v8::Context>, v8::Local<v8::Object>);
 
 struct ivan_module {
   const char* im_name;
@@ -119,11 +145,12 @@ class InternalCallbackScope {
  public:
   explicit InternalCallbackScope(v8::Isolate* isolate) : isolate_(isolate) {}
 
-  ~InternalCallbackScope() {
-    isolate_->RunMicrotasks();
-    printf("eternal is empty: %d\n", next_tick_handler.IsEmpty());
+  ~InternalCallbackScope() { Run(isolate_); }
+
+  static void Run(v8::Isolate* isolate) {
+    isolate->RunMicrotasks();
     if (!next_tick_handler.IsEmpty())
-      next_tick_handler.Get(isolate_)->Call(v8::Undefined(isolate_), 0, nullptr);
+      next_tick_handler.Get(isolate)->Call(v8::Undefined(isolate), 0, nullptr);
   }
  private:
   v8::Isolate* isolate_;

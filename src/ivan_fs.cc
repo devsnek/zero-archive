@@ -226,11 +226,11 @@ static void Read(const FunctionCallbackInfo<Value>& args) {
   FS_CALL(args, read, req, file, &buf, 1, offset);
 }
 
-void Init(Isolate* isolate, Local<Object> exports) {
-  IVAN_SET_METHOD(isolate, exports, "open", Open);
-  IVAN_SET_METHOD(isolate, exports, "close", Close);
-  IVAN_SET_METHOD(isolate, exports, "fstat", FStat);
-  IVAN_SET_METHOD(isolate, exports, "read", Read);
+void Init(Local<Context> context, Local<Object> exports) {
+  IVAN_SET_PROPERTY(context, exports, "open", Open);
+  IVAN_SET_PROPERTY(context, exports, "close", Close);
+  IVAN_SET_PROPERTY(context, exports, "fstat", FStat);
+  IVAN_SET_PROPERTY(context, exports, "read", Read);
 }
 
 }  // namespace fs

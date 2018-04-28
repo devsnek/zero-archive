@@ -29,8 +29,8 @@ static void Exposed(const v8::FunctionCallbackInfo<v8::Value>& info) {
     info.GetReturnValue().Set(val);
 }
 
-void Init(v8::Isolate* isolate, v8::Local<v8::Object> exports) {
-  IVAN_SET_METHOD(isolate, exports, "run", Exposed);
+void Init(v8::Local<v8::Context> context, v8::Local<v8::Object> exports) {
+  IVAN_SET_PROPERTY(context, exports, "run", Exposed);
 }
 
 }  // namespace ScriptWrap

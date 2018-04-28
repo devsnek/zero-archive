@@ -11,7 +11,7 @@ namespace loader {
 
 class ModuleWrap : public BaseObject {
  public:
-  static void Initialize(v8::Isolate* isolate,
+  static void Initialize(v8::Local<v8::Context> context,
                          v8::Local<v8::Object> target);
   static void HostInitializeImportMetaObjectCallback(
       v8::Local<v8::Context> context,

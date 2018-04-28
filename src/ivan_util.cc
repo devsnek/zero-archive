@@ -72,7 +72,6 @@ static void SetPromiseRejectionHandler(const FunctionCallbackInfo<Value>& args) 
 static void SetNextTickHandler(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   next_tick_handler.Set(isolate, args[0].As<Function>());
-  printf("set the eternal, is empty: %d\n", next_tick_handler.IsEmpty());
 }
 
 static void SafeToString(const FunctionCallbackInfo<Value>& args) {
@@ -80,19 +79,17 @@ static void SafeToString(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(args[0]->ToDetailString(context).ToLocalChecked());
 }
 
-static void Init(Isolate* isolate, Local<Object> target) {
-  IVAN_SET_METHOD(isolate, target, "getPromiseDetails", GetPromiseDetails);
-  IVAN_SET_METHOD(isolate, target, "isPromise", IsPromise);
-  IVAN_SET_METHOD(isolate, target, "runMicrotasks", RunMicrotasks);
-  IVAN_SET_METHOD(isolate, target, "enqueueMicrotask", EnqueueMicrotask);
-  IVAN_SET_METHOD(isolate, target, "setPromiseRejectionHandler", SetPromiseRejectionHandler);
-  IVAN_SET_METHOD(isolate, target, "setNextTickHandler", SetNextTickHandler);
-  IVAN_SET_METHOD(isolate, target, "safeToString", SafeToString);
+static void Init(Local<Context> context, Local<Object> target) {
+  IVAN_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
+  IVAN_SET_PROPERTY(context, target, "isPromise", IsPromise);
+  IVAN_SET_PROPERTY(context, target, "runMicrotasks", RunMicrotasks);
+  IVAN_SET_PROPERTY(context, target, "enqueueMicrotask", EnqueueMicrotask);
+  IVAN_SET_PROPERTY(context, target, "setPromiseRejectionHandler", SetPromiseRejectionHandler);
+  IVAN_SET_PROPERTY(context, target, "setNextTickHandler", SetNextTickHandler);
+  IVAN_SET_PROPERTY(context, target, "safeToString", SafeToString);
 
 #define V(name) \
-  USE(target->Set(isolate->GetCurrentContext(),                                \
-              IVAN_STRING(isolate, #name),                                     \
-              Integer::New(isolate, Promise::PromiseState::name)))
+  IVAN_SET_PROPERTY(context, target, #name, Promise::PromiseState::name);
   V(kPending);
   V(kFulfilled);
   V(kRejected);

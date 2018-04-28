@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <iterator>  // std::size
 #include <v8.h>
 #include <uv.h>
 #include "ivan.h"
@@ -30,6 +31,7 @@ using v8::TryCatch;
 #define V(name) void _ivan_register_##name()
   V(util);
   V(module_wrap);
+  V(ffi_wrap);
   V(fs);
 #undef V
 
@@ -77,9 +79,9 @@ static void DebugError(const FunctionCallbackInfo<Value>& info) {
   fflush(stderr);
 }
 
-static void Init(Isolate* isolate, Local<Object> exports) {
-  IVAN_SET_METHOD(isolate, exports, "log", DebugLog);
-  IVAN_SET_METHOD(isolate, exports, "error", DebugError);
+static void Init(Local<Context> context, Local<Object> exports) {
+  IVAN_SET_PROPERTY(context, exports, "log", DebugLog);
+  IVAN_SET_PROPERTY(context, exports, "error", DebugError);
 }
 
 }  // namespace js_debug
@@ -111,7 +113,7 @@ static void Bindings(const FunctionCallbackInfo<Value>& info) {
   } else {
     ivan::ivan_module* mod = ivan::get_module(*request);
     if (mod != nullptr) {
-      mod->im_function(isolate, exports);
+      mod->im_function(context, exports);
     } else {
       IVAN_THROW_EXCEPTION(isolate, "unknown binding");
       return;
@@ -131,7 +133,7 @@ static const char* v8_argv[] = {
   "--harmony-regexp-named-expressions",
   "--harmony-do-expressions",
 };
-static int v8_argc = 7;
+static int v8_argc = std::size(v8_argv);
 
 int main(int argc, char** argv) {
   argv = uv_setup_args(argc, argv);
@@ -155,6 +157,7 @@ int main(int argc, char** argv) {
   V(debug);
   V(script_wrap);
   V(module_wrap);
+  V(ffi_wrap);
   V(util);
   V(fs);
 #undef V
@@ -194,12 +197,13 @@ int main(int argc, char** argv) {
       USE(ivan_fn.As<Function>()->Call(context, context->Global(), argc, args));
 
     uv_loop_t* event_loop = uv_default_loop();
-
     bool more = true;
     do {
       uv_run(event_loop, UV_RUN_DEFAULT);
 
       platform->DrainBackgroundTasks(isolate);
+
+      ivan::InternalCallbackScope::Run(isolate);
 
       more = uv_loop_alive(event_loop);
     } while (more == true);
