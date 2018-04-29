@@ -3,10 +3,6 @@
 const { spawn } = require('child_process');
 const debug = require('util').debuglog('bob');
 
-const rules = {};
-const nodes = [];
-const configs = {};
-
 function topsort(edges) {
   const nodes = {};
   const sorted = [];
@@ -47,27 +43,31 @@ function topsort(edges) {
   return sorted.reverse();
 }
 
+const rules = {};
+const nodes = [];
+const configs = {};
+
+function runCommand(command, targets, output) {
+  const [cmd, ...args] = command
+    .replace(/\{in\}/g, targets)
+    .replace(/\{out\}/g, output)
+    .split(' ');
+  console.log(cmd, args.join(' '));
+  return new Promise((resolve, reject) => {
+    const c = spawn(cmd, args, {
+      stdio: [process.stdin, process.stdout, process.stderr],
+      cwd: process.cwd(),
+    });
+    c.once('error', reject);
+    c.once('exit', resolve);
+  }).then(() => console.log(''));
+}
+
 function rule(name, { command }) {
-  if (typeof command === 'function') {
+  if (typeof command === 'function')
     rules[name] = command;
-  } else {
-    rules[name] = async (targets, output) => {
-      const [cmd, ...args] = command
-        .replace(/\{in\}/g, targets)
-        .replace(/\{out\}/g, output)
-        .split(' ');
-      console.log(cmd, args.join(' '), '\n');
-      debug('command %s', cmd, args);
-      return new Promise((resolve, reject) => {
-        const c = spawn(cmd, args, {
-          stdio: [process.stdin, process.stdout, process.stderr],
-          cwd: process.cwd(),
-        });
-        c.once('error', reject);
-        c.once('exit', resolve);
-      });
-    };
-  }
+  else
+    rules[name] = (targets, output) => runCommand(command, targets, output);
 }
 
 function build(name, { dependencies, ...options } = {}) {
@@ -85,8 +85,11 @@ process.nextTick(async () => {
   const order = topsort(nodes);
   debug('order %s', order);
   for (const n of order) {
-    const { rule, name, targets } = configs[n];
+    const { rule, command, name, targets } = configs[n];
     debug('building %s with rule %s', name, rule);
-    await rules[rule](targets.join(' '), name);
+    if (rule)
+      await rules[rule](targets.join(' '), name);
+    else
+      await runCommand(command, targets, name);
   }
 });

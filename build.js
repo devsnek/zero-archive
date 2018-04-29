@@ -29,6 +29,7 @@ rule('blob2c', {
 
 build('out/ivan_blobs.cc', {
   rule: 'blob2c',
+  dependencies: ['v8'],
   targets: [
     'lib/ivan.js',
     'lib/util.js',
@@ -44,7 +45,7 @@ build('out/ivan_blobs.cc', {
 
 build('out/ivan', {
   rule: 'cc',
-  dependencies: ['out/ivan_blobs.cc'],
+  dependencies: ['v8', 'out/ivan_blobs.cc'],
   targets: [
     'src/ivan.cc',
     'out/ivan_blobs.cc',
@@ -53,4 +54,9 @@ build('out/ivan', {
     'src/ivan_platform.cc',
     'src/ivan_util.cc',
   ],
+});
+
+
+build('v8', {
+  command: 'ninja -C deps/v8/out.gn/x64.release v8_monolith',
 });
