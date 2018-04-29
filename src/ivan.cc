@@ -31,7 +31,6 @@ using v8::TryCatch;
 #define V(name) void _ivan_register_##name()
   V(util);
   V(module_wrap);
-  V(ffi_wrap);
   V(fs);
 #undef V
 
@@ -157,7 +156,6 @@ int main(int argc, char** argv) {
   V(debug);
   V(script_wrap);
   V(module_wrap);
-  V(ffi_wrap);
   V(util);
   V(fs);
 #undef V

@@ -1,5 +1,5 @@
 deps/v8
-build
+out
 ivan
 .ninja_deps
 .ninja_log
