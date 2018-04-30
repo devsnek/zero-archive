@@ -5,7 +5,7 @@ module.exports = {
   parser: 'babel-eslint',
   parserOptions: {
     ecmaVersion: 2018,
-    sourceType: 'script',
+    sourceType: 'module',
     ecmaFeatures: {
       experimentalObjectRestSpread: true,
     },
@@ -40,5 +40,7 @@ module.exports = {
   globals: {
     WebAssembly: false,
     BigInt: false,
+    global: false,
+    console: false,
   },
 };
