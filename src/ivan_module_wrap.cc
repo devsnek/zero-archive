@@ -123,7 +123,7 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
   }
 
   ModuleWrap* obj = new ModuleWrap(isolate, that, module);
-  // obj->context_.Reset(isolate, context);
+  obj->context_.Reset(isolate, context);
 
   // host_defined_options->Set(0,
   //     Integer::New(isolate, contextify::SourceType::kModule));
@@ -155,7 +155,7 @@ void ModuleWrap::Link(const FunctionCallbackInfo<Value>& args) {
 
   Local<Function> resolver_arg = args[0].As<Function>();
 
-  Local<Context> context = isolate->GetCurrentContext(); // obj->context_.Get(isolate);
+  Local<Context> context = obj->context_.Get(isolate);
   Local<Module> module = obj->module_.Get(isolate);
 
   Local<Array> promises = Array::New(isolate,
@@ -194,7 +194,7 @@ void ModuleWrap::Instantiate(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   ModuleWrap* obj;
   ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
-  Local<Context> context = isolate->GetCurrentContext(); // obj->context_.Get(isolate);
+  Local<Context> context = obj->context_.Get(isolate);
   Local<Module> module = obj->module_.Get(isolate);
   Maybe<bool> ok = module->InstantiateModule(context, ModuleWrap::ResolveCallback);
 
@@ -209,7 +209,7 @@ void ModuleWrap::Evaluate(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   ModuleWrap* obj;
   ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
-  Local<Context> context = isolate->GetCurrentContext(); // obj->context_.Get(isolate);
+  Local<Context> context = obj->context_.Get(isolate);
   Local<Module> module = obj->module_.Get(isolate);
 
   TryCatch try_catch(isolate);

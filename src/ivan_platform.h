@@ -1,14 +1,15 @@
 #ifndef SRC_IVAN_PLATFORM_H_
 #define SRC_IVAN_PLATFORM_H_
 
+#include <uv.h>
+
 #include <queue>
 #include <unordered_map>
 #include <vector>
 #include <functional>
 
-#include <libplatform/libplatform.h>
-#include <v8.h>
-#include <uv.h>
+#include "v8.h"
+#include "libplatform/libplatform.h"
 #include "ivan.h"
 #include "ivan_mutex.h"
 
@@ -126,7 +127,7 @@ class MultiIsolatePlatform : public v8::Platform {
 
 class IvanPlatform : public MultiIsolatePlatform {
  public:
-  IvanPlatform(int thread_pool_size);
+  explicit IvanPlatform(int thread_pool_size);
   virtual ~IvanPlatform() {}
 
   void DrainBackgroundTasks(v8::Isolate* isolate) override;
@@ -168,4 +169,4 @@ class IvanPlatform : public MultiIsolatePlatform {
 
 }  // namespace ivan
 
-#endif  // SRC_IVAN_PLATFORM_H
+#endif  // SRC_IVAN_PLATFORM_H_

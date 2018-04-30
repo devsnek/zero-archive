@@ -1,7 +1,7 @@
 #ifndef SRC_IVAN_SCRIPT_WRAP_H_
 #define SRC_IVAN_SCRIPT_WRAP_H_
 
-#include <v8.h>
+#include "v8.h"
 
 namespace ivan {
 namespace ScriptWrap {

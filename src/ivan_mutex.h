@@ -184,4 +184,4 @@ MutexBase<Traits>::ScopedUnlock::~ScopedUnlock() {
 
 }  // namespace ivan
 
-#endif // SRC_IVAN_MUTEX_H_
+#endif  // SRC_IVAN_MUTEX_H_

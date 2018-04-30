@@ -63,7 +63,7 @@ class ModuleWrap : public BaseObject {
   v8::Persistent<v8::Module> module_;
   bool linked_ = false;
   std::unordered_map<std::string, v8::Persistent<v8::Promise>> resolve_cache_;
-  // Persistent<v8::Context> context_;
+  v8::Persistent<v8::Context> context_;
 };
 
 }  // namespace loader

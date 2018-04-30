@@ -22,7 +22,7 @@
 #ifndef SRC_BASE_OBJECT_H_
 #define SRC_BASE_OBJECT_H_
 
-#include <v8.h>
+#include "v8.h"
 
 namespace ivan {
 

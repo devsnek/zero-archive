@@ -1,5 +1,6 @@
-#include <v8.h>
 #include <uv.h>
+
+#include "v8.h"
 #include "ivan.h"
 
 using v8::Context;
@@ -18,7 +19,7 @@ namespace fs {
 
 class IvanReq {
  public:
-  IvanReq(Isolate* isolate, bool sync = false, void* data = nullptr) :
+  explicit IvanReq(Isolate* isolate, bool sync = false, void* data = nullptr) :
     isolate_(isolate), sync_(sync), data_(data) {}
 
   ~IvanReq() {
