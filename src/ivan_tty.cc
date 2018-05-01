@@ -14,6 +14,7 @@ using v8::FunctionTemplate;
 using v8::IntegrityLevel;
 using v8::Isolate;
 using v8::Local;
+using v8::MaybeLocal;
 using v8::Object;
 using v8::String;
 using v8::Value;
@@ -47,10 +48,16 @@ class TTYWrap : public BaseObject {
   static void ReadCallback(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
     TTYWrap* obj = reinterpret_cast<TTYWrap*>(stream->data);
     Isolate* isolate = Isolate::GetCurrent();
-    Local<Value> args[] = {
-      String::NewFromUtf8(isolate, buf->base, String::NewStringType::kNormalString, buf->len),
-    };
-    obj->read_cb_.Get(isolate)->Call(v8::Undefined(isolate), 1, args);
+    Local<Context> context = isolate->GetCurrentContext();
+
+    MaybeLocal<String> s =
+      String::NewFromUtf8(isolate, buf->base, String::NewStringType::kNormalString, buf->len);
+
+    if (!s.IsEmpty()) {
+      Local<Value> args[] = { s.IsEmpty() ? String::Empty(isolate) : s.ToLocalChecked() };
+      Local<Function> cb = obj->read_cb_.Get(isolate);
+      USE(cb->Call(context, obj->object(), 1, args));
+    }
   }
 
   static void New(const FunctionCallbackInfo<Value>& args) {
@@ -74,15 +81,18 @@ class TTYWrap : public BaseObject {
     TTYWrap* obj;
     ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
 
+    // TODO(devsnek): needs better memory stuff here to not spit out evil
     String::Utf8Value utf8(isolate, args[0]);
     const char* data = *utf8;
 
     uv_buf_t buf[] = {
-      { .base = (char*) data, .len = strlen(data) },
+      { .base = (char*) data, .len = static_cast<size_t>(utf8.length()) },
     };
 
-    uv_write_t req;
-    uv_write(&req, reinterpret_cast<uv_stream_t*>(&obj->handle_), buf, 1, [](uv_write_t*, int) {});
+    uv_write_t* req = new uv_write_t;
+    uv_write(req, reinterpret_cast<uv_stream_t*>(&obj->handle_), buf, 1, [](uv_write_t* req, int) {
+      delete req;
+    });
   }
 
  private:

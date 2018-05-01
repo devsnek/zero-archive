@@ -10,7 +10,7 @@ out/ivan: out out/ivan_blobs.cc $(CFILES) $(HFILES)
 	$(CC) $(CFILES) out/ivan_blobs.cc $(CFLAGS) $(LIBS) $(INCLUDES) -o $@
 
 out/ivan_blobs.cc: $(JSFILES)
-	python $@ out/ivan_blobs.cc $^
+	python tools/blob2c.py $@ $^
 
 out:
 	mkdir -p out

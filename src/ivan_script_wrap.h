@@ -13,12 +13,13 @@ v8::MaybeLocal<v8::Value> Internal(
   v8::ScriptOrigin origin(filename, v8::Integer::New(isolate, 0), v8::Integer::New(isolate, 0));
   v8::ScriptCompiler::Source source(code, origin);
 
-  v8::Local<v8::UnboundScript> script = v8::ScriptCompiler::CompileUnboundScript(
-      isolate, &source, v8::ScriptCompiler::kNoCompileOptions).ToLocalChecked();
+  v8::Local<v8::UnboundScript> script;
+  if (v8::ScriptCompiler::CompileUnboundScript(
+        isolate, &source, v8::ScriptCompiler::kNoCompileOptions).ToLocal(&script)) {
+    return script->BindToCurrentContext()->Run(context);
+  }
 
-  v8::MaybeLocal<v8::Value> result = script->BindToCurrentContext()->Run(context);
-
-  return result;
+  return v8::MaybeLocal<v8::Value>();
 }
 
 static void Exposed(const v8::FunctionCallbackInfo<v8::Value>& info) {
