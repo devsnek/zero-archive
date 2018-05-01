@@ -4,14 +4,15 @@ INCLUDES = -Ideps/v8/include
 CFLAGS = -Wall -std=c++1z -stdlib=libc++
 CFILES = $(wildcard src/*.cc)
 HFILES = $(wildcard src/*.h)
+JSFILES = $(shell find lib -type f -name '*.js')
 
-ivan: directories ivan_blobs $(CFILES)
-	$(CC) $(CFILES) out/ivan_blobs.cc $(CFLAGS) $(LIBS) $(INCLUDES) -o out/ivan
+out/ivan: out out/ivan_blobs.cc $(CFILES) $(HFILES)
+	$(CC) $(CFILES) out/ivan_blobs.cc $(CFLAGS) $(LIBS) $(INCLUDES) -o $@
 
-ivan_blobs:
-	python tools/blob2c.py out/ivan_blobs.cc $(shell find lib -type f -name '*.js')
+out/ivan_blobs.cc: $(JSFILES)
+	python $@ out/ivan_blobs.cc $^
 
-directories:
+out:
 	mkdir -p out
 
 .PHONY: clean

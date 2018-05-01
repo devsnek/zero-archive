@@ -19,9 +19,7 @@ using v8::String;
 using v8::Value;
 
 static void alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
-  printf("alloc\n");
   *buf = uv_buf_init(Malloc(suggested_size), suggested_size);
-  printf("done\n");
 }
 
 class TTYWrap : public BaseObject {
