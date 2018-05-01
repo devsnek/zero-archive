@@ -33,6 +33,7 @@ using v8::TryCatch;
   V(util);
   V(module_wrap);
   V(fs);
+  V(tty);
 #undef V
 
 namespace ivan {
@@ -159,6 +160,7 @@ int main(int argc, char** argv) {
   V(module_wrap);
   V(util);
   V(fs);
+  V(tty);
 #undef V
 
   {
@@ -216,5 +218,6 @@ int main(int argc, char** argv) {
   V8::Dispose();
   V8::ShutdownPlatform();
   delete create_params.array_buffer_allocator;
+  uv_tty_reset_mode();
   return 0;
 }

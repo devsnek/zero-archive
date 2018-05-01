@@ -33,26 +33,6 @@
 #define CHECK_LT(a, b) CHECK((a) < (b))
 #define CHECK_NE(a, b) CHECK((a) != (b))
 
-template <typename T> inline void USE(T&&) {};
-
-template <typename T, size_t N>
-constexpr size_t arraysize(const T(&)[N]) { return N; }
-
-template <typename TypeName>
-void Wrap(v8::Local<v8::Object> object, TypeName* pointer) {
-  CHECK_EQ(false, object.IsEmpty());
-  CHECK_GT(object->InternalFieldCount(), 0);
-  object->SetAlignedPointerInInternalField(0, pointer);
-}
-
-template <typename TypeName>
-TypeName* Unwrap(v8::Local<v8::Object> object) {
-  CHECK_EQ(false, object.IsEmpty());
-  CHECK_GT(object->InternalFieldCount(), 0);
-  void* pointer = object->GetAlignedPointerFromInternalField(0);
-  return static_cast<TypeName*>(pointer);
-}
-
 #define UNREACHABLE() abort()
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName)                                    \
@@ -62,6 +42,8 @@ TypeName* Unwrap(v8::Local<v8::Object> object) {
   TypeName(TypeName&&) = delete
 
 #define IVAN_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
+
+template <typename T> inline void USE(T&&) {};
 
 inline void IVAN_SET_PROTO_METHOD(
     v8::Local<v8::Context> context,
@@ -124,6 +106,107 @@ inline void IVAN_SET_PROPERTY(
   } while (0)
 
 namespace ivan {
+
+template <typename T, size_t N>
+inline constexpr size_t arraysize(const T(&)[N]) { return N; }
+
+inline void LowMemoryNotification() {
+  auto isolate = v8::Isolate::GetCurrent();
+  if (isolate != nullptr) {
+    isolate->LowMemoryNotification();
+  }
+}
+
+template <typename TypeName>
+void Wrap(v8::Local<v8::Object> object, TypeName* pointer) {
+  CHECK_EQ(false, object.IsEmpty());
+  CHECK_GT(object->InternalFieldCount(), 0);
+  object->SetAlignedPointerInInternalField(0, pointer);
+}
+
+template <typename TypeName>
+TypeName* Unwrap(v8::Local<v8::Object> object) {
+  CHECK_EQ(false, object.IsEmpty());
+  CHECK_GT(object->InternalFieldCount(), 0);
+  void* pointer = object->GetAlignedPointerFromInternalField(0);
+  return static_cast<TypeName*>(pointer);
+}
+
+inline size_t MultiplyWithOverflowCheck(size_t a, size_t b) {
+  size_t ret = a * b;
+  if (a != 0)
+    CHECK_EQ(b, ret / a);
+
+  return ret;
+}
+
+// These should be used in our code as opposed to the native
+// versions as they abstract out some platform and or
+// compiler version specific functionality.
+// malloc(0) and realloc(ptr, 0) have implementation-defined behavior in
+// that the standard allows them to either return a unique pointer or a
+// nullptr for zero-sized allocation requests.  Normalize by always using
+// a nullptr.
+template <typename T>
+T* UncheckedRealloc(T* pointer, size_t n) {
+  size_t full_size = MultiplyWithOverflowCheck(sizeof(T), n);
+
+  if (full_size == 0) {
+    free(pointer);
+    return nullptr;
+  }
+
+  void* allocated = realloc(pointer, full_size);
+
+  if (UNLIKELY(allocated == nullptr)) {
+    // Tell V8 that memory is low and retry.
+    LowMemoryNotification();
+    allocated = realloc(pointer, full_size);
+  }
+
+  return static_cast<T*>(allocated);
+}
+
+// As per spec realloc behaves like malloc if passed nullptr.
+template <typename T>
+inline T* UncheckedMalloc(size_t n) {
+  if (n == 0) n = 1;
+  return UncheckedRealloc<T>(nullptr, n);
+}
+
+template <typename T>
+inline T* UncheckedCalloc(size_t n) {
+  if (n == 0) n = 1;
+  MultiplyWithOverflowCheck(sizeof(T), n);
+  return static_cast<T*>(calloc(n, sizeof(T)));
+}
+
+template <typename T>
+inline T* Realloc(T* pointer, size_t n) {
+  T* ret = UncheckedRealloc(pointer, n);
+  if (n > 0) CHECK_NE(ret, nullptr);
+  return ret;
+}
+
+template <typename T>
+inline T* Malloc(size_t n) {
+  T* ret = UncheckedMalloc<T>(n);
+  if (n > 0) CHECK_NE(ret, nullptr);
+  return ret;
+}
+
+template <typename T>
+inline T* Calloc(size_t n) {
+  T* ret = UncheckedCalloc<T>(n);
+  if (n > 0) CHECK_NE(ret, nullptr);
+  return ret;
+}
+
+// Shortcuts for char*.
+inline char* Malloc(size_t n) { return Malloc<char>(n); }
+inline char* Calloc(size_t n) { return Calloc<char>(n); }
+inline char* UncheckedMalloc(size_t n) { return UncheckedMalloc<char>(n); }
+inline char* UncheckedCalloc(size_t n) { return UncheckedCalloc<char>(n); }
 
 typedef void (*IvanModuleCallback)(v8::Local<v8::Context>, v8::Local<v8::Object>);
 
