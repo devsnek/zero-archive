@@ -41,6 +41,10 @@ class TTYWrap : public BaseObject {
 
   ~TTYWrap() {
     read_cb_.Reset();
+    End();
+  }
+
+  void End() {
     uv_read_stop(reinterpret_cast<uv_stream_t*>(&handle_));
     uv_shutdown_t req;
     uv_shutdown(&req, reinterpret_cast<uv_stream_t*>(&handle_), nullptr);
@@ -77,7 +81,6 @@ class TTYWrap : public BaseObject {
     TTYWrap* obj;
     ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
 
-    // TODO(devsnek): needs better memory stuff here to not spit out evil
     String::Utf8Value* utf8 = new String::Utf8Value(isolate, args[0]);
 
     uv_buf_t buf[] = {
@@ -85,9 +88,17 @@ class TTYWrap : public BaseObject {
     };
 
     uv_write_t* req = new uv_write_t;
+    req->data = utf8;
     uv_write(req, reinterpret_cast<uv_stream_t*>(&obj->handle_), buf, 1, [](uv_write_t* req, int) {
+      delete reinterpret_cast<String::Utf8Value*>(req->data);
       delete req;
     });
+  }
+
+  static void End(const FunctionCallbackInfo<Value>& args) {
+    TTYWrap* obj;
+    ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
+    obj->End();
   }
 
  private:
@@ -103,6 +114,7 @@ void Init(Local<Context> context, Local<Object> target) {
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
   IVAN_SET_PROTO_METHOD(context, tpl, "write", TTYWrap::Write);
+  IVAN_SET_PROTO_METHOD(context, tpl, "end", TTYWrap::End);
 
   target->Set(IVAN_STRING(isolate, "TTYWrap"), tpl->GetFunction());
 }
