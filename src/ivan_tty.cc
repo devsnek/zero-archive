@@ -17,6 +17,7 @@ using v8::Local;
 using v8::MaybeLocal;
 using v8::Object;
 using v8::String;
+using v8::TryCatch;
 using v8::Value;
 
 static void alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
@@ -50,14 +51,9 @@ class TTYWrap : public BaseObject {
     Isolate* isolate = Isolate::GetCurrent();
     Local<Context> context = isolate->GetCurrentContext();
 
-    MaybeLocal<String> s =
-      String::NewFromUtf8(isolate, buf->base, String::NewStringType::kNormalString, buf->len);
-
-    if (!s.IsEmpty()) {
-      Local<Value> args[] = { s.IsEmpty() ? String::Empty(isolate) : s.ToLocalChecked() };
-      Local<Function> cb = obj->read_cb_.Get(isolate);
-      USE(cb->Call(context, obj->object(), 1, args));
-    }
+    Local<Value> args[] = { IVAN_STRING(isolate, buf->base) };
+    Local<Function> cb = obj->read_cb_.Get(isolate);
+    USE(cb->Call(context, obj->object(), 1, args));
   }
 
   static void New(const FunctionCallbackInfo<Value>& args) {
@@ -82,11 +78,10 @@ class TTYWrap : public BaseObject {
     ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
 
     // TODO(devsnek): needs better memory stuff here to not spit out evil
-    String::Utf8Value utf8(isolate, args[0]);
-    const char* data = *utf8;
+    String::Utf8Value* utf8 = new String::Utf8Value(isolate, args[0]);
 
     uv_buf_t buf[] = {
-      { .base = (char*) data, .len = static_cast<size_t>(utf8.length()) },
+      { .base = (char*) **utf8, .len = static_cast<size_t>(utf8->length()) },
     };
 
     uv_write_t* req = new uv_write_t;
