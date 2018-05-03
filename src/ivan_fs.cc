@@ -3,6 +3,7 @@
 #include "v8.h"
 #include "ivan.h"
 
+using v8::BigInt;
 using v8::Context;
 using v8::FunctionCallbackInfo;
 using v8::Integer;
@@ -81,7 +82,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       const uv_stat_t* s = &req->statbuf;
       Local<Object> table = Object::New(isolate);
 #define V(name) \
-      USE(table->Set(context, IVAN_STRING(isolate, #name), v8::Integer::New(isolate, s->st_##name)))
+      USE(table->Set(context, IVAN_STRING(isolate, #name), v8::BigInt::New(isolate, s->st_##name)))
       V(dev);
       V(mode);
       V(nlink);
@@ -95,7 +96,14 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       V(flags);
       V(gen);
 #undef V
-      // atim mtim ctim birthtim
+#define V(name) \
+      USE(table->Set(context, IVAN_STRING(isolate, #name), \
+            v8::BigInt::New(isolate, (int64_t) (s->st_##name.tv_sec * 1000000000) + s->st_##name.tv_nsec)));
+      V(atim);
+      V(mtim);
+      V(ctim);
+      V(birthtim);
+#undef V
       const char* type = NULL;
       if (S_ISREG(s->st_mode))
         type = "file";
@@ -216,7 +224,9 @@ static void Read(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
   uv_file file = args[0]->Int32Value();
-  int64_t len = args[1]->Int32Value();
+  int64_t len = args[1]->IsBigInt() ?
+    args[1].As<BigInt>()->Int64Value().FromJust() :
+    args[1]->IntegerValue();
   int64_t offset = args[2]->Int32Value();
 
   char* buffer = reinterpret_cast<char*>(malloc(len));

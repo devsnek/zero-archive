@@ -1,25 +1,29 @@
 'use strict';
 
+/* eslint-env node */
+
 module.exports = {
   extends: 'airbnb',
   parser: 'babel-eslint',
   parserOptions: {
     ecmaVersion: 2018,
-    sourceType: 'module',
+    sourceType: 'script',
     ecmaFeatures: {
       experimentalObjectRestSpread: true,
     },
   },
   env: {
     es6: true,
-    node: false,
+    node: true,
   },
   rules: {
     'strict': ['error', 'global'],
-    'curly': ['error', 'multi-or-nest', 'consistent'],
     'no-iterator': 'off',
+    'no-bitwise': 'off',
     'global-require': 'off',
     'quote-props': ['error', 'consistent-as-needed'],
+    'brace-style': ['error', '1tbs', { allowSingleLine: false }],
+    'curly': ['error', 'all'],
     'no-param-reassign': 'off',
     'arrow-parens': ['error', 'always'],
     'no-multi-assign': 'off',
@@ -40,7 +44,5 @@ module.exports = {
   globals: {
     WebAssembly: false,
     BigInt: false,
-    global: false,
-    console: false,
   },
 };

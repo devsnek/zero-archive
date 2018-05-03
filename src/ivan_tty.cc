@@ -36,6 +36,7 @@ class TTYWrap : public BaseObject {
     if (readable && !read_cb.IsEmpty()) {
       read_cb_.Reset(isolate, read_cb.As<Function>());
       uv_read_start(reinterpret_cast<uv_stream_t*>(&handle_), alloc_cb, ReadCallback);
+      uv_tty_set_mode(&handle_, UV_TTY_MODE_RAW);
     }
   }
 
@@ -52,10 +53,13 @@ class TTYWrap : public BaseObject {
 
   static void ReadCallback(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
     TTYWrap* obj = reinterpret_cast<TTYWrap*>(stream->data);
-    Isolate* isolate = Isolate::GetCurrent();
+    Isolate* isolate = obj->isolate();
     Local<Context> context = isolate->GetCurrentContext();
 
-    Local<Value> args[] = { IVAN_STRING(isolate, buf->base) };
+    Local<Value> args[] = {
+      String::NewFromUtf8(isolate, buf->base, String::NewStringType::kNormalString, nread),
+      // IVAN_STRING(isolate, buf->base),
+    };
     Local<Function> cb = obj->read_cb_.Get(isolate);
     USE(cb->Call(context, obj->object(), 1, args));
   }
