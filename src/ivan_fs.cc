@@ -1,4 +1,5 @@
 #include <uv.h>
+#include <string>
 
 #include "v8.h"
 #include "ivan.h"
@@ -20,8 +21,14 @@ namespace fs {
 
 class IvanReq {
  public:
-  explicit IvanReq(Isolate* isolate, bool sync = false, void* data = nullptr) :
-    isolate_(isolate), sync_(sync), data_(data) {}
+  explicit IvanReq(Isolate* isolate,
+                   char* type,
+                   bool sync = false,
+                   void* data = nullptr) :
+    isolate_(isolate),
+    type_(type),
+    sync_(sync),
+    data_(data) {}
 
   ~IvanReq() {
     isolate_ = nullptr;
@@ -29,6 +36,7 @@ class IvanReq {
   }
 
   inline Isolate* isolate() const { return isolate_; }
+  inline char* type() const { return type_; }
   inline bool sync() const { return sync_; }
   inline void* data() const { return data_; }
   inline void resolver(Local<Promise::Resolver> r) {
@@ -40,6 +48,7 @@ class IvanReq {
 
  private:
   Isolate* isolate_;
+  char* type_;
   bool sync_;
   void* data_;
   Persistent<Promise::Resolver> resolver_;
@@ -149,13 +158,21 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
   }
 }
 
+const char* makeErrMessage(const char* type, int result) {
+  std::string e = type;
+  e += " ";
+  e += uv_strerror(result);
+  return e.c_str();
+}
+
 void fs_cb(uv_fs_t* req) {
   IvanReq* data = reinterpret_cast<IvanReq*>(req->data);
   Isolate* isolate = data->isolate();
   Local<Context> context = isolate->GetCurrentContext();
   InternalCallbackScope callback_scope(isolate);
   if (req->fs_type != UV_FS_ACCESS && req->result < 0) {
-    Local<Value> e = v8::Exception::Error(IVAN_STRING(isolate, uv_strerror(req->result)));
+    Local<Value> e = v8::Exception::Error(
+        IVAN_STRING(isolate, makeErrMessage(data->type(), req->result)));
     USE(data->resolver()->Reject(context, e));
   } else {
     Local<Value> v = normalize_req(isolate, req);
@@ -173,7 +190,7 @@ void fs_cb(uv_fs_t* req) {
   int ret = uv_fs_##func(uv_default_loop(), req, __VA_ARGS__, data->sync() ? NULL : fs_cb); \
   Isolate* isolate = args.GetIsolate();                                       \
   if (req->fs_type != UV_FS_ACCESS && ret < 0) {                              \
-    IVAN_THROW_EXCEPTION(isolate, uv_strerror(req->result));                  \
+    IVAN_THROW_EXCEPTION(isolate, makeErrMessage(data->type(), req->result)); \
     delete data;                                                              \
     delete req;                                                               \
   } else if (data->sync()) {                                                  \
@@ -200,7 +217,7 @@ static void Open(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   String::Utf8Value path(isolate, args[0].As<String>());
 
-  FS_INIT(isolate, args[1]->IsFalse());
+  FS_INIT(isolate, "open", args[1]->IsFalse());
   FS_CALL(args, open, req, *path, O_RDONLY, 0);
 }
 
@@ -208,7 +225,7 @@ static void Close(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   uv_file file = args[0]->Int32Value();
 
-  FS_INIT(isolate, args[1]->IsFalse());
+  FS_INIT(isolate, "close", args[1]->IsFalse());
   FS_CALL(args, close, req, file);
 }
 
@@ -216,7 +233,7 @@ static void FStat(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   uv_file file = args[0]->Int32Value();
 
-  FS_INIT(isolate, args[1]->IsFalse());
+  FS_INIT(isolate, "fstat", args[1]->IsFalse());
   FS_CALL(args, fstat, req, file);
 }
 
@@ -233,7 +250,7 @@ static void Read(const FunctionCallbackInfo<Value>& args) {
 
   uv_buf_t buf = uv_buf_init(buffer, len);
 
-  FS_INIT(isolate, args[3]->IsFalse(), buf.base);
+  FS_INIT(isolate, "read", args[3]->IsFalse(), buf.base);
   FS_CALL(args, read, req, file, &buf, 1, offset);
 }
 
