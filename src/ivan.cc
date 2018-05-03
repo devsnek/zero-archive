@@ -29,11 +29,18 @@ using v8::Platform;
 using v8::Promise;
 using v8::TryCatch;
 
+#define IVAN_INTERNAL_MODULES(V) \
+  V(util);                       \
+  V(module_wrap);                \
+  V(script_wrap);                \
+  V(fs);                         \
+  V(tty);                        \
+  V(debug);                      \
+  V(performance);
+
+
 #define V(name) void _ivan_register_##name()
-  V(util);
-  V(module_wrap);
-  V(fs);
-  V(tty);
+IVAN_INTERNAL_MODULES(V)
 #undef V
 
 namespace ivan {
@@ -155,12 +162,7 @@ int main(int argc, char** argv) {
   isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
 
 #define V(name) _ivan_register_##name()
-  V(debug);
-  V(script_wrap);
-  V(module_wrap);
-  V(util);
-  V(fs);
-  V(tty);
+  IVAN_INTERNAL_MODULES(V)
 #undef V
 
   {

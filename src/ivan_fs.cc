@@ -22,11 +22,11 @@ namespace fs {
 class IvanReq {
  public:
   explicit IvanReq(Isolate* isolate,
-                   char* type,
+                   const char* type,
                    bool sync = false,
                    void* data = nullptr) :
     isolate_(isolate),
-    type_(type),
+    type_((char*) type),
     sync_(sync),
     data_(data) {}
 
