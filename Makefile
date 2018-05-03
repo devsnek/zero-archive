@@ -4,7 +4,7 @@ CFLAGS = -Wall -std=c++1z -stdlib=libc++
 CFILES = $(wildcard src/*.cc)
 HFILES = $(wildcard src/*.h)
 JSFILES = $(shell find lib -type f -name '*.js')
-V8FILES = deps/v8/out.gn/x64.release/obj/{libv8_monolith,third_party/icu/libicu{uc,i18n}}.a
+V8FILES = $(shell echo deps/v8/out.gn/x64.release/obj/{libv8_monolith,third_party/icu/libicu{uc,i18n}}.a)
 INCLUDES = -Ideps/v8/include $(V8FILES)
 
 out/ivan: out $(V8FILES) out/ivan_blobs.cc $(CFILES) $(HFILES)

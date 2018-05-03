@@ -58,7 +58,6 @@ class TTYWrap : public BaseObject {
 
     Local<Value> args[] = {
       String::NewFromUtf8(isolate, buf->base, String::NewStringType::kNormalString, nread),
-      // IVAN_STRING(isolate, buf->base),
     };
     Local<Function> cb = obj->read_cb_.Get(isolate);
     USE(cb->Call(context, obj->object(), 1, args));
