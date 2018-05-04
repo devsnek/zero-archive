@@ -97,14 +97,6 @@ inline void IVAN_SET_PROPERTY(
     ivan_module_register(&_ivan_module_##name);                               \
   }
 
-#define ASSIGN_OR_RETURN_UNWRAP(ptr, obj, ...)                                \
-  do {                                                                        \
-    *ptr =                                                                    \
-        Unwrap<typename std::remove_reference<decltype(**ptr)>::type>(obj);   \
-    if (*ptr == nullptr)                                                      \
-      return __VA_ARGS__;                                                     \
-  } while (0)
-
 namespace ivan {
 
 template <typename T, size_t N>
@@ -115,21 +107,6 @@ inline void LowMemoryNotification() {
   if (isolate != nullptr) {
     isolate->LowMemoryNotification();
   }
-}
-
-template <typename TypeName>
-void Wrap(v8::Local<v8::Object> object, TypeName* pointer) {
-  CHECK_EQ(false, object.IsEmpty());
-  CHECK_GT(object->InternalFieldCount(), 0);
-  object->SetAlignedPointerInInternalField(0, pointer);
-}
-
-template <typename TypeName>
-TypeName* Unwrap(v8::Local<v8::Object> object) {
-  CHECK_EQ(false, object.IsEmpty());
-  CHECK_GT(object->InternalFieldCount(), 0);
-  void* pointer = object->GetAlignedPointerFromInternalField(0);
-  return static_cast<TypeName*>(pointer);
 }
 
 inline size_t MultiplyWithOverflowCheck(size_t a, size_t b) {

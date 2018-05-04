@@ -132,8 +132,6 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
   id_to_module_wrap_map[obj->GetID()] = obj;
   module_to_module_wrap_map.emplace(module->GetIdentityHash(), obj);
 
-  Wrap(that, obj);
-
   that->SetIntegrityLevel(context, IntegrityLevel::kFrozen);
   args.GetReturnValue().Set(that);
 }
@@ -416,9 +414,7 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
 void ModuleWrap::Initialize(Local<Context> context, Local<Object> target) {
   Isolate* isolate = context->GetIsolate();
 
-  Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
-  tpl->SetClassName(IVAN_STRING(isolate, "ModuleWrap"));
-  tpl->InstanceTemplate()->SetInternalFieldCount(1);
+  Local<FunctionTemplate> tpl = BaseObject::MakeJSTemplate(isolate, "ModuleWrap", New);
 
   IVAN_SET_PROTO_METHOD(context, tpl, "link", Link);
   IVAN_SET_PROTO_METHOD(context, tpl, "instantiate", Instantiate);

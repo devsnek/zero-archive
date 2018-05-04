@@ -22,6 +22,7 @@
 #ifndef SRC_BASE_OBJECT_H_
 #define SRC_BASE_OBJECT_H_
 
+#include <type_traits>  // std::remove_reference
 #include "v8.h"
 
 namespace ivan {
@@ -31,7 +32,7 @@ class Environment;
 class BaseObject {
  public:
   inline BaseObject(v8::Isolate* isolate, v8::Local<v8::Object> handle);
-  virtual ~BaseObject() = default;
+  virtual inline ~BaseObject();
 
   // Returns the wrapped object.  Returns an empty handle when
   // persistent.IsEmpty() is true.
@@ -47,15 +48,26 @@ class BaseObject {
     return isolate_;
   }
 
-  // The handle_ must have an internal field count > 0, and the first
-  // index is reserved for a pointer to this class. This is an
-  // implicit requirement, but Node does not have a case where it's
-  // required that MakeWeak() be called and the internal field not
-  // be set.
-  template <typename Type>
-  inline void MakeWeak(Type* ptr);
+  // Get a BaseObject* pointer, or subclass pointer, for the JS object that
+  // was also passed to the `BaseObject()` constructor initially.
+  // This may return `nullptr` if the C++ object has not been constructed yet,
+  // e.g. when the JS object used `MakeLazilyInitializedJSTemplate`.
+  static inline BaseObject* FromJSObject(v8::Local<v8::Object> object);
+  template <typename T>
+  static inline T* FromJSObject(v8::Local<v8::Object> object);
 
+  // Make the `Persistent` a weak reference and, `delete` this object once
+  // the JS object has been garbage collected.
+  inline void MakeWeak();
+
+  // Undo `MakeWeak()`, i.e. turn this into a strong reference.
   inline void ClearWeak();
+
+  // Utility to create a FunctionTemplate with one internal field (used for
+  // the `BaseObject*` pointer) and a constructor that initializes that field
+  // to `nullptr`.
+  static inline v8::Local<v8::FunctionTemplate> MakeJSTemplate(
+      v8::Isolate* isolate, const char* name, v8::FunctionCallback callback);
 
  private:
   BaseObject();
@@ -67,6 +79,21 @@ class BaseObject {
   v8::Persistent<v8::Object> persistent_handle_;
   v8::Isolate* isolate_;
 };
+
+// Global alias for FromJSObject() to avoid churn.
+template <typename T>
+inline T* Unwrap(v8::Local<v8::Object> obj) {
+  return BaseObject::FromJSObject<T>(obj);
+}
+
+
+#define ASSIGN_OR_RETURN_UNWRAP(ptr, obj, ...)                                \
+  do {                                                                        \
+    *ptr = static_cast<typename std::remove_reference<decltype(*ptr)>::type>( \
+        BaseObject::FromJSObject(obj));                                       \
+    if (*ptr == nullptr)                                                      \
+      return __VA_ARGS__;                                                     \
+  } while (0)
 
 }  // namespace ivan
 

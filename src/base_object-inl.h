@@ -34,31 +34,63 @@ inline BaseObject::BaseObject(v8::Isolate* isolate, v8::Local<v8::Object> handle
   CHECK_EQ(false, handle.IsEmpty());
   // The zero field holds a pointer to the handle. Immediately set it to
   // nullptr in case it's accessed by the user before construction is complete.
-  if (handle->InternalFieldCount() > 0)
-    handle->SetAlignedPointerInInternalField(0, nullptr);
-}
-
-template <typename Type>
-inline void BaseObject::WeakCallback(
-    const v8::WeakCallbackInfo<Type>& data) {
-  delete data.GetParameter();
-}
-
-
-template <typename Type>
-inline void BaseObject::MakeWeak(Type* ptr) {
-  v8::HandleScope scope(isolate_);
-  v8::Local<v8::Object> handle = object();
   CHECK_GT(handle->InternalFieldCount(), 0);
-  Wrap(handle, ptr);
-  persistent_handle_.MarkIndependent();
-  persistent_handle_.SetWeak<Type>(ptr, WeakCallback<Type>,
-                                   v8::WeakCallbackType::kParameter);
+  handle->SetAlignedPointerInInternalField(0, static_cast<void*>(this));
+}
+
+inline BaseObject::~BaseObject() {
+  if (persistent_handle_.IsEmpty()) {
+    // This most likely happened because the weak callback below cleared it.
+    return;
+  }
+
+  {
+    v8::HandleScope handle_scope(isolate_);
+    object()->SetAlignedPointerInInternalField(0, nullptr);
+  }
+}
+
+
+template <typename T>
+inline T* BaseObject::FromJSObject(v8::Local<v8::Object> obj) {
+  CHECK_GT(obj->InternalFieldCount(), 0);
+  return static_cast<T*>(obj->GetAlignedPointerFromInternalField(0));
+}
+
+
+inline BaseObject* BaseObject::FromJSObject(v8::Local<v8::Object> obj) {
+  return FromJSObject<BaseObject>(obj);
+}
+
+
+inline void BaseObject::MakeWeak() {
+  persistent_handle_.SetWeak(
+      this,
+      [](const v8::WeakCallbackInfo<BaseObject>& data) {
+        BaseObject* obj = data.GetParameter();
+        // Clear the persistent handle so that ~BaseObject() doesn't attempt
+        // to mess with internal fields, since the JS object may have
+        // transitioned into an invalid state.
+        // Refs: https://github.com/nodejs/node/issues/18897
+        obj->persistent_handle_.Reset();
+        delete obj;
+      }, v8::WeakCallbackType::kParameter);
 }
 
 
 inline void BaseObject::ClearWeak() {
   persistent_handle_.ClearWeak();
+}
+
+
+v8::Local<v8::FunctionTemplate>
+BaseObject::MakeJSTemplate(v8::Isolate* isolate,
+                           const char* name,
+                           v8::FunctionCallback constructor) {
+  v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(isolate, constructor);
+  tpl->SetClassName(IVAN_STRING(isolate, name));
+  tpl->InstanceTemplate()->SetInternalFieldCount(1);
+  return tpl;
 }
 
 }  // namespace ivan

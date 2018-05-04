@@ -45,6 +45,17 @@ class TTYWrap : public BaseObject {
     End();
   }
 
+  static void New(const FunctionCallbackInfo<Value>& args) {
+    CHECK(args.IsConstructCall());
+
+    Isolate* isolate = args.GetIsolate();
+    Local<Object> that = args.This();
+
+    new TTYWrap(isolate, that, args[0]->Int32Value(), args[1]);
+
+    args.GetReturnValue().Set(that);
+  }
+
   void End() {
     uv_read_stop(reinterpret_cast<uv_stream_t*>(&handle_));
     uv_shutdown_t req;
@@ -61,22 +72,6 @@ class TTYWrap : public BaseObject {
     };
     Local<Function> cb = obj->read_cb_.Get(isolate);
     USE(cb->Call(context, obj->object(), 1, args));
-  }
-
-  static void New(const FunctionCallbackInfo<Value>& args) {
-    CHECK(args.IsConstructCall());
-
-    Isolate* isolate = args.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
-
-    Local<Object> that = args.This();
-
-    TTYWrap* obj = new TTYWrap(isolate, that, args[0]->Int32Value(), args[1]);
-
-    Wrap(that, obj);
-
-    that->SetIntegrityLevel(context, IntegrityLevel::kFrozen);
-    args.GetReturnValue().Set(that);
   }
 
   static void Write(const FunctionCallbackInfo<Value>& args) {
@@ -112,9 +107,7 @@ class TTYWrap : public BaseObject {
 void Init(Local<Context> context, Local<Object> target) {
   Isolate* isolate = context->GetIsolate();
 
-  Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, TTYWrap::New);
-  tpl->SetClassName(IVAN_STRING(isolate, "TTYWrap"));
-  tpl->InstanceTemplate()->SetInternalFieldCount(1);
+  Local<FunctionTemplate> tpl = BaseObject::MakeJSTemplate(isolate, "TTYWrap", TTYWrap::New);
 
   IVAN_SET_PROTO_METHOD(context, tpl, "write", TTYWrap::Write);
   IVAN_SET_PROTO_METHOD(context, tpl, "end", TTYWrap::End);
