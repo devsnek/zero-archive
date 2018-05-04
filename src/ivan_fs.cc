@@ -91,7 +91,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       const uv_stat_t* s = &req->statbuf;
       Local<Object> table = Object::New(isolate);
 #define V(name) \
-      USE(table->Set(context, IVAN_STRING(isolate, #name), v8::BigInt::New(isolate, s->st_##name)))
+      USE(table->Set(context, IVAN_STRING(isolate, #name), v8::Integer::New(isolate, s->st_##name)))
       V(dev);
       V(mode);
       V(nlink);
@@ -107,7 +107,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
 #undef V
 #define V(name) \
       USE(table->Set(context, IVAN_STRING(isolate, #name), \
-            v8::BigInt::New(isolate, (int64_t) (s->st_##name.tv_sec * 1000000000) + s->st_##name.tv_nsec)));
+            v8::Integer::New(isolate, (int64_t) (s->st_##name.tv_sec * 1000000000) + s->st_##name.tv_nsec)));
       V(atim);
       V(mtim);
       V(ctim);
@@ -216,9 +216,10 @@ void fs_cb(uv_fs_t* req) {
 static void Open(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   String::Utf8Value path(isolate, args[0].As<String>());
+  int mode = args[1]->Int32Value();
 
-  FS_INIT(isolate, "open", args[1]->IsFalse());
-  FS_CALL(args, open, req, *path, O_RDONLY, 0);
+  FS_INIT(isolate, "open", args[2]->IsFalse());
+  FS_CALL(args, open, req, *path, mode, 0);
 }
 
 static void Close(const FunctionCallbackInfo<Value>& args) {
@@ -241,9 +242,7 @@ static void Read(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
   uv_file file = args[0]->Int32Value();
-  int64_t len = args[1]->IsBigInt() ?
-    args[1].As<BigInt>()->Int64Value().FromJust() :
-    args[1]->IntegerValue();
+  int64_t len = args[1]->IntegerValue();
   int64_t offset = args[2]->Int32Value();
 
   char* buffer = reinterpret_cast<char*>(malloc(len));
@@ -259,6 +258,19 @@ void Init(Local<Context> context, Local<Object> exports) {
   IVAN_SET_PROPERTY(context, exports, "close", Close);
   IVAN_SET_PROPERTY(context, exports, "fstat", FStat);
   IVAN_SET_PROPERTY(context, exports, "read", Read);
+
+#define V(n) IVAN_SET_PROPERTY(context, exports, #n, n);
+  V(O_RDONLY);
+  V(O_WRONLY);
+  V(O_RDWR);
+  V(O_APPEND);
+#ifdef O_SYNC
+  V(O_SYNC);
+#endif
+  V(O_CREAT);
+  V(O_TRUNC);
+  V(O_EXCL);
+#undef V
 }
 
 }  // namespace fs

@@ -140,6 +140,7 @@ static const char* v8_argv[] = {
   "--harmony-subsume-json",
   "--harmony-regexp-named-expressions",
   "--harmony-do-expressions",
+  "--allow-natives-syntax",
 };
 static int v8_argc = std::size(v8_argv);
 

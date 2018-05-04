@@ -1,9 +1,6 @@
 #include "v8.h"
 #include "ivan.h"
 
-namespace ivan {
-namespace util {
-
 using v8::Array;
 using v8::Boolean;
 using v8::Context;
@@ -13,9 +10,14 @@ using v8::FunctionCallbackInfo;
 using v8::Object;
 using v8::Integer;
 using v8::Isolate;
+using v8::String;
 using v8::Value;
 using v8::Promise;
 using v8::Value;
+using v8::V8;
+
+namespace ivan {
+namespace util {
 
 static void GetPromiseDetails(const FunctionCallbackInfo<Value>& info) {
   Isolate* isolate = info.GetIsolate();
@@ -79,6 +81,11 @@ static void SafeToString(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(args[0]->ToDetailString(context).ToLocalChecked());
 }
 
+static void SetV8Flags(const FunctionCallbackInfo<Value>& args) {
+  String::Utf8Value flags(args.GetIsolate(), args[0]);
+  V8::SetFlagsFromString(*flags, flags.length());
+}
+
 static void Init(Local<Context> context, Local<Object> target) {
   IVAN_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
   IVAN_SET_PROPERTY(context, target, "isPromise", IsPromise);
@@ -87,6 +94,7 @@ static void Init(Local<Context> context, Local<Object> target) {
   IVAN_SET_PROPERTY(context, target, "setPromiseRejectionHandler", SetPromiseRejectionHandler);
   IVAN_SET_PROPERTY(context, target, "setNextTickHandler", SetNextTickHandler);
   IVAN_SET_PROPERTY(context, target, "safeToString", SafeToString);
+  IVAN_SET_PROPERTY(context, target, "setV8Flags", SetV8Flags);
 
 #define V(name) \
   IVAN_SET_PROPERTY(context, target, #name, Promise::PromiseState::name);
