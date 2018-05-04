@@ -160,7 +160,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
 
 const char* makeErrMessage(const char* type, int result) {
   std::string e = type;
-  e += " ";
+  e += ": ";
   e += uv_strerror(result);
   return e.c_str();
 }

@@ -80,17 +80,7 @@ inline void IVAN_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
-    v8::Local<v8::FunctionTemplate> tpl) {
-  USE(target->Set(context,
-                  v8::String::NewFromUtf8(context->GetIsolate(), name),
-                  tpl->GetFunction()));
-}
-
-inline void IVAN_SET_PROPERTY(
-    v8::Local<v8::Context> context,
-    v8::Local<v8::Object> target,
-    const char* name,
-    v8::Local<v8::String> value) {
+    v8::Local<v8::Value> value) {
   USE(target->Set(context,
                   v8::String::NewFromUtf8(context->GetIsolate(), name),
                   value));
@@ -102,7 +92,8 @@ inline void IVAN_SET_PROPERTY(
     const char* name,
     v8::FunctionCallback fn) {
   v8::Isolate* isolate = context->GetIsolate();
-  return IVAN_SET_PROPERTY(context, target, name, v8::FunctionTemplate::New(isolate, fn));
+  return IVAN_SET_PROPERTY(context, target, name,
+      v8::FunctionTemplate::New(isolate, fn)->GetFunction());
 }
 
 #define IVAN_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)

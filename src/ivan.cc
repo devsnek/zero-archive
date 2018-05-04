@@ -132,6 +132,10 @@ static void Bindings(const FunctionCallbackInfo<Value>& info) {
   info.GetReturnValue().Set(exports);
 }
 
+static void Exit(const FunctionCallbackInfo<Value>& args) {
+  exit(args[0]->Int32Value());
+}
+
 static const char* v8_argv[] = {
   "--harmony-class-fields",
   "--harmony-static-fields",
@@ -177,7 +181,8 @@ int main(int argc, char** argv) {
 
     Local<Object> process = Object::New(isolate);
     Local<Array> pargv = Array::New(isolate, argc);
-    USE(process->Set(context, String::NewFromUtf8(isolate, "argv"), pargv));
+    IVAN_SET_PROPERTY(context, process, "exit", Exit);
+    IVAN_SET_PROPERTY(context, process, "argv", pargv);
     for (int i = 0; i < argc; i++)
       USE(pargv->Set(context, i, String::NewFromUtf8(isolate, argv[i])));
 
