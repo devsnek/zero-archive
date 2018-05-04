@@ -41,18 +41,6 @@
 
 template <typename T> inline void USE(T&&) {};
 
-inline void IVAN_SET_PROTO_METHOD(
-    v8::Local<v8::Context> context,
-    v8::Local<v8::FunctionTemplate> that,
-    const char* name,
-    v8::FunctionCallback callback) {
-  v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Signature> signature = v8::Signature::New(isolate, that);
-  v8::Local<v8::FunctionTemplate> t =
-    v8::FunctionTemplate::New(isolate, callback, v8::Local<v8::Value>(), signature);
-  v8::Local<v8::String> name_string = v8::String::NewFromUtf8(isolate, name);
-  that->PrototypeTemplate()->Set(name_string, t);
-}
 
 inline void IVAN_SET_PROPERTY(
     v8::Local<v8::Context> context,
@@ -94,6 +82,17 @@ inline void IVAN_SET_PROPERTY(
   v8::Isolate* isolate = context->GetIsolate();
   return IVAN_SET_PROPERTY(context, target, name,
       v8::FunctionTemplate::New(isolate, fn)->GetFunction());
+}
+
+inline void IVAN_SET_PROTO_PROP(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::FunctionTemplate> that,
+    const char* name,
+    v8::FunctionCallback callback) {
+  v8::Isolate* isolate = context->GetIsolate();
+  that->PrototypeTemplate()->Set(
+      v8::String::NewFromUtf8(isolate, name),
+      v8::FunctionTemplate::New(isolate, callback));
 }
 
 #define IVAN_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)

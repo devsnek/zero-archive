@@ -38,6 +38,7 @@ class TTYWrap : public BaseObject {
       uv_read_start(reinterpret_cast<uv_stream_t*>(&handle_), alloc_cb, ReadCallback);
       uv_tty_set_mode(&handle_, UV_TTY_MODE_RAW);
     }
+    IVAN_SET_PROPERTY(isolate->GetCurrentContext(), obj, "isTTY", uv_guess_handle(fd) == UV_TTY);
   }
 
   ~TTYWrap() {
@@ -109,8 +110,8 @@ void Init(Local<Context> context, Local<Object> target) {
 
   Local<FunctionTemplate> tpl = BaseObject::MakeJSTemplate(isolate, "TTYWrap", TTYWrap::New);
 
-  IVAN_SET_PROTO_METHOD(context, tpl, "write", TTYWrap::Write);
-  IVAN_SET_PROTO_METHOD(context, tpl, "end", TTYWrap::End);
+  IVAN_SET_PROTO_PROP(context, tpl, "write", TTYWrap::Write);
+  IVAN_SET_PROTO_PROP(context, tpl, "end", TTYWrap::End);
 
   target->Set(IVAN_STRING(isolate, "TTYWrap"), tpl->GetFunction());
 }

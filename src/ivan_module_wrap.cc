@@ -416,13 +416,13 @@ void ModuleWrap::Initialize(Local<Context> context, Local<Object> target) {
 
   Local<FunctionTemplate> tpl = BaseObject::MakeJSTemplate(isolate, "ModuleWrap", New);
 
-  IVAN_SET_PROTO_METHOD(context, tpl, "link", Link);
-  IVAN_SET_PROTO_METHOD(context, tpl, "instantiate", Instantiate);
-  IVAN_SET_PROTO_METHOD(context, tpl, "evaluate", Evaluate);
-  IVAN_SET_PROTO_METHOD(context, tpl, "getNamespace", GetNamespace);
-  IVAN_SET_PROTO_METHOD(context, tpl, "getStatus", GetStatus);
-  IVAN_SET_PROTO_METHOD(context, tpl, "getError", GetError);
-  IVAN_SET_PROTO_METHOD(context, tpl, "getStaticDependencySpecifiers",
+  IVAN_SET_PROTO_PROP(context, tpl, "link", Link);
+  IVAN_SET_PROTO_PROP(context, tpl, "instantiate", Instantiate);
+  IVAN_SET_PROTO_PROP(context, tpl, "evaluate", Evaluate);
+  IVAN_SET_PROTO_PROP(context, tpl, "getNamespace", GetNamespace);
+  IVAN_SET_PROTO_PROP(context, tpl, "getStatus", GetStatus);
+  IVAN_SET_PROTO_PROP(context, tpl, "getError", GetError);
+  IVAN_SET_PROTO_PROP(context, tpl, "getStaticDependencySpecifiers",
                       GetStaticDependencySpecifiers);
 
   target->Set(IVAN_STRING(isolate, "ModuleWrap"), tpl->GetFunction());
