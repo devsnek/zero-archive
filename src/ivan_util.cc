@@ -86,6 +86,36 @@ static void SetV8Flags(const FunctionCallbackInfo<Value>& args) {
   V8::SetFlagsFromString(*flags, flags.length());
 }
 
+static void CreateMessage(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  Local<Context> context = isolate->GetCurrentContext();
+  Local<v8::Message> msg = v8::Exception::CreateMessage(isolate, args[0]);
+  Local<Object> obj = Object::New(isolate);
+
+  Local<String> source_line;
+  Local<String> resource_name;
+  int line_number;
+  int start_column;
+  int end_column;
+
+  if (msg->GetSourceLine(context).ToLocal(&source_line))
+    IVAN_SET_PROPERTY(context, obj, "sourceLine", source_line);
+
+  IVAN_SET_PROPERTY(context, obj, "resourceName",
+      msg->GetScriptResourceName()->ToString());
+
+  if (msg->GetLineNumber(context).To(&line_number))
+    IVAN_SET_PROPERTY(context, obj, "lineNumber", line_number);
+
+  if (msg->GetStartColumn(context).To(&start_column))
+    IVAN_SET_PROPERTY(context, obj, "startColumn", start_column);
+
+  if (msg->GetEndColumn(context).To(&end_column))
+    IVAN_SET_PROPERTY(context, obj, "endColumn", end_column);
+
+  args.GetReturnValue().Set(obj);
+}
+
 static void Init(Local<Context> context, Local<Object> target) {
   IVAN_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
   IVAN_SET_PROPERTY(context, target, "isPromise", IsPromise);
@@ -95,6 +125,7 @@ static void Init(Local<Context> context, Local<Object> target) {
   IVAN_SET_PROPERTY(context, target, "setNextTickHandler", SetNextTickHandler);
   IVAN_SET_PROPERTY(context, target, "safeToString", SafeToString);
   IVAN_SET_PROPERTY(context, target, "setV8Flags", SetV8Flags);
+  IVAN_SET_PROPERTY(context, target, "createMessage", CreateMessage);
 
 #define V(name) \
   IVAN_SET_PROPERTY(context, target, #name, Promise::PromiseState::name);

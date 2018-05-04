@@ -1,8 +1,6 @@
 #ifndef SRC_IVAN_H_
 #define SRC_IVAN_H_
 
-#include <type_traits>  // std::remove_reference
-
 #include "v8.h"
 
 #ifdef __GNUC__
@@ -18,12 +16,12 @@
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
-#define CHECK(expr)                                             \
-  do {                                                          \
-    if (UNLIKELY(!(expr))) {                                    \
-      fprintf(stderr, "%s:%s Assertion `%s' failed.\n",         \
-          __FILE__, STRINGIFY(__LINE__), #expr);                \
-    }                                                           \
+#define CHECK(expr)                                                           \
+  do {                                                                        \
+    if (UNLIKELY(!(expr))) {                                                  \
+      fprintf(stderr, "%s:%s Assertion `%s' failed.\n",                       \
+          __FILE__, STRINGIFY(__LINE__), #expr);                              \
+    }                                                                         \
   } while (0)
 
 #define CHECK_EQ(a, b) CHECK((a) == (b))
@@ -41,8 +39,6 @@
   TypeName(const TypeName&) = delete;                                         \
   TypeName(TypeName&&) = delete
 
-#define IVAN_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
-
 template <typename T> inline void USE(T&&) {};
 
 inline void IVAN_SET_PROTO_METHOD(
@@ -54,7 +50,7 @@ inline void IVAN_SET_PROTO_METHOD(
   v8::Local<v8::Signature> signature = v8::Signature::New(isolate, that);
   v8::Local<v8::FunctionTemplate> t =
     v8::FunctionTemplate::New(isolate, callback, v8::Local<v8::Value>(), signature);
-  v8::Local<v8::String> name_string = IVAN_STRING(isolate, name);
+  v8::Local<v8::String> name_string = v8::String::NewFromUtf8(isolate, name);
   that->PrototypeTemplate()->Set(name_string, t);
 }
 
@@ -65,7 +61,7 @@ inline void IVAN_SET_PROPERTY(
     double value) {
   v8::Isolate* isolate = context->GetIsolate();
   USE(target->Set(context,
-                  IVAN_STRING(isolate, name),
+                  v8::String::NewFromUtf8(isolate, name),
                   v8::Number::New(isolate, value)));
 }
 
@@ -76,7 +72,7 @@ inline void IVAN_SET_PROPERTY(
     int32_t value) {
   v8::Isolate* isolate = context->GetIsolate();
   USE(target->Set(context,
-                  IVAN_STRING(isolate, name),
+                  v8::String::NewFromUtf8(isolate, name),
                   v8::Integer::New(isolate, value)));
 }
 
@@ -86,8 +82,18 @@ inline void IVAN_SET_PROPERTY(
     const char* name,
     v8::Local<v8::FunctionTemplate> tpl) {
   USE(target->Set(context,
-                  IVAN_STRING(context->GetIsolate(), name),
+                  v8::String::NewFromUtf8(context->GetIsolate(), name),
                   tpl->GetFunction()));
+}
+
+inline void IVAN_SET_PROPERTY(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::Object> target,
+    const char* name,
+    v8::Local<v8::String> value) {
+  USE(target->Set(context,
+                  v8::String::NewFromUtf8(context->GetIsolate(), name),
+                  value));
 }
 
 inline void IVAN_SET_PROPERTY(
@@ -99,8 +105,10 @@ inline void IVAN_SET_PROPERTY(
   return IVAN_SET_PROPERTY(context, target, name, v8::FunctionTemplate::New(isolate, fn));
 }
 
+#define IVAN_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
+
 #define IVAN_THROW_EXCEPTION(isolate, message) \
-  (void) isolate->ThrowException(v8::Exception::Error(IVAN_STRING(isolate, message)))
+  (void) isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate, message)))
 
 #define IVAN_REGISTER_INTERNAL(name, fn)                                      \
   static ivan::ivan_module _ivan_module_##name = {#name, fn};                 \

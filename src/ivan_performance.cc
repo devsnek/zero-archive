@@ -23,14 +23,14 @@ static void now(const FunctionCallbackInfo<Value>& args) {
 
   uint64_t t = uv_hrtime() - timeOrigin;
 
-  args.GetReturnValue().Set(v8::Number::New(isolate, (double) t / NS_PER_MS));
+  args.GetReturnValue().Set(v8::Number::New(isolate, static_cast<double>(t) / NS_PER_MS));
 }
 
 void Init(Local<Context> context, Local<Object> target) {
   timeOrigin = uv_hrtime();
 
   IVAN_SET_PROPERTY(context, target, "now", now);
-  IVAN_SET_PROPERTY(context, target, "timeOrigin", (double) timeOrigin / NS_PER_MS);
+  IVAN_SET_PROPERTY(context, target, "timeOrigin", static_cast<double>(timeOrigin) / NS_PER_MS);
 }
 
 }  // namespace performance

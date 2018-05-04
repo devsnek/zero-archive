@@ -106,8 +106,8 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       V(gen);
 #undef V
 #define V(name) \
-      USE(table->Set(context, IVAN_STRING(isolate, #name), \
-            v8::Integer::New(isolate, (int64_t) (s->st_##name.tv_sec * 1000000000) + s->st_##name.tv_nsec)));
+      USE(table->Set(context, IVAN_STRING(isolate, #name), v8::Integer::New(isolate,              \
+                     (int64_t) (s->st_##name.tv_sec * 1000000000) + s->st_##name.tv_nsec)));
       V(atim);
       V(mtim);
       V(ctim);
