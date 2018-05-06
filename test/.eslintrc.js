@@ -11,9 +11,11 @@ module.exports = {
     node: false,
   },
   globals: {
-    WebAssembly: false,
-    BigInt: false,
     global: false,
     console: false,
+    performance: false,
+    EventTarget: false,
+    Event: false,
+    CustomEvent: false,
   },
 };

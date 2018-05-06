@@ -42,6 +42,5 @@ module.exports = {
   globals: {
     WebAssembly: false,
     BigInt: false,
-    performance: false,
   },
 };
