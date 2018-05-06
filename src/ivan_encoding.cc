@@ -134,22 +134,17 @@ class Decoder : public BaseObject {
       obj->bom_seen_ = true;
     }
 
-    UChar* target;
+    UChar* target = Malloc<UChar>(limit);
     ucnv_toUnicode(obj->conv_,
                    &target, target + (limit * sizeof(UChar)),
                    &source, source + source_length,
                    nullptr, flush, &status);
 
     if (U_SUCCESS(status)) {
-      int32_t len = u_strlen(target);
-      char* out = Malloc(len);
-      ucnv_fromUChars(obj->conv_, out, limit, target, len, &status);
-      if (U_SUCCESS(status)) {
-        printf("output %s\n", out);
-        args.GetReturnValue().Set(IVAN_STRING(isolate, (const char*) out));
-      } else {
-        args.GetReturnValue().Set(status);
-      }
+      char* out = Malloc(limit);
+      int32_t len = ucnv_fromUChars(obj->conv_, out, limit, target, limit, &status);
+      MaybeLocal<String> s = String::NewFromUtf8(isolate, (const char*) out, v8::NewStringType::kNormal, len);
+      args.GetReturnValue().Set(s.ToLocalChecked());
     } else {
       args.GetReturnValue().Set(status);
     }
