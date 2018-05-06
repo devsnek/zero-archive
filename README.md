@@ -11,8 +11,9 @@ Ivan does not currently have any bare import specifiers but if it did they would
 ##### In Progress
 
 - W3C Web Performance Timing API
+- WHATWG Console
 
-##### No Progress
+##### Planned
 
 - WHATWG Fetch
 - WHATWG URL
