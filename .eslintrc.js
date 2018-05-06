@@ -36,9 +36,7 @@ module.exports = {
     'consistent-return': 'off',
     'no-continue': 'off',
     'import/no-dynamic-require': 'off',
-    'import/no-extraneous-dependencies': ['error', {
-      devDependencies: true,
-    }],
+    'import/no-extraneous-dependencies': 'off',
     'import/extensions': 'off',
   },
   globals: {

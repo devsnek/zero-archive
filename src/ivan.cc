@@ -36,7 +36,8 @@ using v8::TryCatch;
   V(fs);                         \
   V(tty);                        \
   V(debug);                      \
-  V(performance);
+  V(performance);                \
+  V(tcp);
 
 
 #define V(name) void _ivan_register_##name()

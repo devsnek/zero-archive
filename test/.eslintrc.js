@@ -1,5 +1,7 @@
 'use strict';
 
+/* eslint-env node */
+
 module.exports = {
   extends: '../.eslintrc.js',
   parserOptions: {
@@ -13,5 +15,5 @@ module.exports = {
     BigInt: false,
     global: false,
     console: false,
-  }
+  },
 };

@@ -41,7 +41,6 @@
 
 template <typename T> inline void USE(T&&) {};
 
-
 inline void IVAN_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
@@ -62,6 +61,14 @@ inline void IVAN_SET_PROPERTY(
   USE(target->Set(context,
                   v8::String::NewFromUtf8(isolate, name),
                   v8::Integer::New(isolate, value)));
+}
+
+inline void IVAN_SET_PROPERTY(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::Object> target,
+    const char* name,
+    size_t value) {
+  return IVAN_SET_PROPERTY(context, target, name, (int32_t) value);
 }
 
 inline void IVAN_SET_PROPERTY(
