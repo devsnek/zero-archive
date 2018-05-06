@@ -1,5 +1,5 @@
 CC = g++
-LIBS = -luv
+LIBS = -luv $(shell pkg-config --libs --cflags icu-uc icu-io icu-i18n)
 CFLAGS = -Wall -std=c++1z -stdlib=libc++
 CFILES = $(wildcard src/*.cc)
 HFILES = $(wildcard src/*.h)

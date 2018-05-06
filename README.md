@@ -13,11 +13,11 @@ Ivan does not currently have any bare import specifiers but if it did they would
 - W3C Web Performance Timing API
 - WHATWG Console
 - WHATWG Events
+- WHATWG Encoding
 
 ##### Planned
 
 - WHATWG Fetch
 - WHATWG URL
-- WHATWG Encoding
 - WHATWG Streams
 

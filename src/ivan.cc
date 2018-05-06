@@ -30,6 +30,7 @@ using v8::Promise;
 using v8::TryCatch;
 
 #define IVAN_INTERNAL_MODULES(V) \
+  V(encoding);                   \
   V(util);                       \
   V(module_wrap);                \
   V(script_wrap);                \

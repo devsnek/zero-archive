@@ -26,5 +26,7 @@ module.exports = {
     addEventListener: false,
     removeEventListener: false,
     dispatchEvent: false,
+    TextEncoder: false,
+    TextDecoder: false,
   },
 };
