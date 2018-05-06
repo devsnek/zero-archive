@@ -2,13 +2,18 @@ export default class Maybe {
   #hasValue = false;
   #value;
 
-  isNothing() { return !this.#hasValue; }
+  isNothing() {
+    return !this.#hasValue;
+  }
 
-  isJust() { return this.#hasValue; }
+  isJust() {
+    return this.#hasValue;
+  }
 
   fromJust() {
-    if (!this.#hasValue)
+    if (!this.#hasValue) {
       throw new Error('Maybe value is Nothing.');
+    }
 
     return this.#value;
   }

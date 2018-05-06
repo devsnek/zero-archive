@@ -10,6 +10,12 @@ module.exports = {
   env: {
     node: false,
   },
+  rules: {
+    'import/no-dynamic-require': 'off',
+    'import/no-extraneous-dependencies': 'off',
+    'import/extensions': 'off',
+    'import/no-unresolved': 'off',
+  },
   globals: {
     global: false,
     console: false,
@@ -17,5 +23,8 @@ module.exports = {
     EventTarget: false,
     Event: false,
     CustomEvent: false,
+    addEventListener: false,
+    removeEventListener: false,
+    dispatchEvent: false,
   },
 };

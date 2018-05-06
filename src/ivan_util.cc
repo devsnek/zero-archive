@@ -76,6 +76,11 @@ static void SetNextTickHandler(const FunctionCallbackInfo<Value>& args) {
   next_tick_handler.Set(isolate, args[0].As<Function>());
 }
 
+static void SetExitHandler(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  exit_handler.Set(isolate, args[0].As<Function>());
+}
+
 static void SafeToString(const FunctionCallbackInfo<Value>& args) {
   auto context = args.GetIsolate()->GetCurrentContext();
   args.GetReturnValue().Set(args[0]->ToDetailString(context).ToLocalChecked());
@@ -123,6 +128,7 @@ static void Init(Local<Context> context, Local<Object> target) {
   IVAN_SET_PROPERTY(context, target, "enqueueMicrotask", EnqueueMicrotask);
   IVAN_SET_PROPERTY(context, target, "setPromiseRejectionHandler", SetPromiseRejectionHandler);
   IVAN_SET_PROPERTY(context, target, "setNextTickHandler", SetNextTickHandler);
+  IVAN_SET_PROPERTY(context, target, "setExitHandler", SetExitHandler);
   IVAN_SET_PROPERTY(context, target, "safeToString", SafeToString);
   IVAN_SET_PROPERTY(context, target, "setV8Flags", SetV8Flags);
   IVAN_SET_PROPERTY(context, target, "createMessage", CreateMessage);

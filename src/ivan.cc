@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
       USE(ivan_fn.As<Function>()->Call(context, context->Global(), argc, args));
 
     uv_loop_t* event_loop = uv_default_loop();
-    bool more = true;
+    int more = 1;
     do {
       uv_run(event_loop, UV_RUN_DEFAULT);
 
@@ -216,7 +216,11 @@ int main(int argc, char** argv) {
       ivan::InternalCallbackScope::Run(isolate);
 
       more = uv_loop_alive(event_loop);
-    } while (more == true);
+    } while (more == 1);
+
+    if (!ivan::exit_handler.IsEmpty()) {
+      USE(ivan::exit_handler.Get(isolate)->Call(context, context->Global(), 0, {}));
+    }
 
     if (try_catch.HasCaught())
       ivan::errors::ReportException(isolate, &try_catch);

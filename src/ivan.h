@@ -217,6 +217,7 @@ enum EmbedderKeys {
 
 static v8::Eternal<v8::Function> promise_reject_handler;
 static v8::Eternal<v8::Function> next_tick_handler;
+static v8::Eternal<v8::Function> exit_handler;
 
 class InternalCallbackScope {
  public:

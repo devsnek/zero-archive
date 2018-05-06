@@ -35,9 +35,6 @@ module.exports = {
     'no-unused-expressions': 'off',
     'consistent-return': 'off',
     'no-continue': 'off',
-    'import/no-dynamic-require': 'off',
-    'import/no-extraneous-dependencies': 'off',
-    'import/extensions': 'off',
   },
   globals: {
     WebAssembly: false,

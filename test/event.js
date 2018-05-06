@@ -5,3 +5,9 @@ t.addEventListener('test', (e) => {
 });
 
 t.dispatchEvent(new CustomEvent('test'));
+
+global.addEventListener('test2', (e) => {
+  console.log('global worked', e);
+});
+
+global.dispatchEvent(new Event('test2'));
