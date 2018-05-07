@@ -10,4 +10,4 @@ global.addEventListener('test2', (e) => {
   console.log('global worked', e);
 });
 
-global.dispatchEvent(new Event('test2'));
+dispatchEvent(new Event('test2'));

@@ -28,5 +28,6 @@ module.exports = {
     dispatchEvent: false,
     TextEncoder: false,
     TextDecoder: false,
+    Headers: false,
   },
 };

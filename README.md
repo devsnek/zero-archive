@@ -4,7 +4,9 @@ Ivan is a JavaScript runtime which has native ES Modules and shares many browser
 
 Ivan's source is based heavily on Node.js because Ivan is my way of learning about Node.js core.
 
-Ivan does not currently have any bare import specifiers but if it did they would be prefixed with `@ivan`
+Ivan does not currently have any bare import specifiers but if it did they would be prefixed with `@ivan`.
+
+A lot of code in Ivan is inspired from other codebases. Those codebases will be linked at the top of the individual files.
 
 ### Todo
 
@@ -14,10 +16,10 @@ Ivan does not currently have any bare import specifiers but if it did they would
 - WHATWG Console
 - WHATWG Events
 - WHATWG Encoding
+- WHATWG Fetch
 
 ##### Planned
 
-- WHATWG Fetch
 - WHATWG URL
 - WHATWG Streams
 
