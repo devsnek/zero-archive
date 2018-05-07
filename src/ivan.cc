@@ -194,9 +194,6 @@ int main(int argc, char** argv) {
       FunctionTemplate::New(isolate, Bindings)->GetFunction(),
     };
 
-    USE(context->Global()->Set(
-          context, String::NewFromUtf8(isolate, "global"), context->Global()));
-
     TryCatch try_catch(isolate);
 
     MaybeLocal<Value> ivan_fn_maybe = ivan::ScriptWrap::Internal(
