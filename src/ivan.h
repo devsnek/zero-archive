@@ -88,7 +88,10 @@ inline void IVAN_SET_PROPERTY(
     v8::FunctionCallback fn) {
   v8::Isolate* isolate = context->GetIsolate();
   return IVAN_SET_PROPERTY(context, target, name,
-      v8::FunctionTemplate::New(isolate, fn)->GetFunction());
+      v8::FunctionTemplate::New(
+        isolate, fn,
+        v8::Local<v8::Value>(), v8::Local<v8::Signature>(), 0,
+        v8::ConstructorBehavior::kThrow)->GetFunction());
 }
 
 inline void IVAN_SET_PROTO_PROP(
