@@ -143,7 +143,8 @@ class Decoder : public BaseObject {
     if (U_SUCCESS(status)) {
       char* out = Malloc(limit);
       int32_t len = ucnv_fromUChars(obj->conv_, out, limit, target, limit, &status);
-      MaybeLocal<String> s = String::NewFromUtf8(isolate, (const char*) out, v8::NewStringType::kNormal, len);
+      MaybeLocal<String> s =
+        String::NewFromUtf8(isolate, (const char*) out, v8::NewStringType::kNormal, len);
       args.GetReturnValue().Set(s.ToLocalChecked());
     } else {
       args.GetReturnValue().Set(status);
@@ -160,13 +161,14 @@ class Decoder : public BaseObject {
   UConverter* conv_;
   bool unicode_ = false;     // True if this is a Unicode converter
   bool ignore_bom_ = false;   // True if the BOM should be ignored on Unicode
-  bool bom_seen_ = false; // True if the BOM has been seen
+  bool bom_seen_ = false;  // True if the BOM has been seen
 };
 
 void Init(Local<Context> context, Local<Object> target) {
   Isolate* isolate = context->GetIsolate();
 
-  Local<v8::FunctionTemplate> tpl = BaseObject::MakeJSTemplate(isolate, "NativeDecoder", Decoder::Create);
+  Local<v8::FunctionTemplate> tpl =
+    BaseObject::MakeJSTemplate(isolate, "NativeDecoder", Decoder::Create);
   IVAN_SET_PROTO_PROP(context, tpl, "decode", Decoder::Decode);
   IVAN_SET_PROPERTY(context, target, "NativeDecoder", tpl->GetFunction());
 

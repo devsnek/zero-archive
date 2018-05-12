@@ -17,9 +17,9 @@ A lot of code in Ivan is inspired from other codebases. Those codebases will be 
 - WHATWG Events
 - WHATWG Encoding
 - WHATWG Fetch
+- WHATWG URL
 
 ##### Planned
 
-- WHATWG URL
 - WHATWG Streams
 

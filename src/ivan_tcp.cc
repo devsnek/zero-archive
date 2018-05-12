@@ -1,5 +1,5 @@
-#include <string>
 #include <uv.h>
+#include <string>
 
 #include "v8.h"
 #include "ivan.h"
@@ -83,9 +83,11 @@ static void Listen(const FunctionCallbackInfo<Value>& args) {
   struct sockaddr_in addr;
   HANDLE_UV(isolate, uv_ip4_addr(*ip, port, &addr));
 
-  HANDLE_UV(isolate, uv_tcp_bind(&that->handle, reinterpret_cast<const struct sockaddr*>(&addr), 0));
+  HANDLE_UV(isolate,
+      uv_tcp_bind(&that->handle, reinterpret_cast<const struct sockaddr*>(&addr), 0));
 
-  HANDLE_UV(isolate, uv_listen(reinterpret_cast<uv_stream_t*>(&that->handle), 511, on_uv_connection));
+  HANDLE_UV(isolate,
+      uv_listen(reinterpret_cast<uv_stream_t*>(&that->handle), 511, on_uv_connection));
 }
 
 static void on_uv_connect(uv_connect_t* req, int status) {

@@ -216,6 +216,7 @@ void ivan_module_register(void*);
 
 enum EmbedderKeys {
   kBindingCache,
+  kInspector,
 };
 
 static v8::Eternal<v8::Function> promise_reject_handler;

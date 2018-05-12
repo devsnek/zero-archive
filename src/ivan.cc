@@ -38,7 +38,8 @@ using v8::TryCatch;
   V(tty);                        \
   V(debug);                      \
   V(performance);                \
-  V(tcp);
+  V(tcp);                        \
+  V(inspector_sync);
 
 
 #define V(name) void _ivan_register_##name()
@@ -180,6 +181,7 @@ int main(int argc, char** argv) {
     Context::Scope context_scope(context);
 
     context->SetEmbedderData(ivan::EmbedderKeys::kBindingCache, Object::New(isolate));
+    context->SetAlignedPointerInEmbedderData(ivan::EmbedderKeys::kInspector, nullptr);
 
     Local<Object> process = Object::New(isolate);
     Local<Array> pargv = Array::New(isolate, argc);
