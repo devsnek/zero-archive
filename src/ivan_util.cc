@@ -13,6 +13,7 @@ using v8::Isolate;
 using v8::String;
 using v8::Value;
 using v8::Promise;
+using v8::Proxy;
 using v8::Value;
 using v8::V8;
 
@@ -34,6 +35,19 @@ static void GetPromiseDetails(const FunctionCallbackInfo<Value>& info) {
   ret->Set(0, Integer::New(isolate, state));
   if (state != Promise::PromiseState::kPending)
     ret->Set(1, promise->Result());
+}
+
+static void GetProxyDetails(const FunctionCallbackInfo<Value>& info) {
+  if (!info[0]->IsProxy()) {
+    return;
+  }
+
+  Isolate* isolate = info.GetIsolate();
+  Local<Array> ret = Array::New(isolate, 2);
+  Local<Proxy> p = info[0].As<Proxy>();
+  ret->Set(0, p->GetTarget());
+  ret->Set(1, p->GetHandler());
+  info.GetReturnValue().Set(ret);
 }
 
 static void IsPromise(const FunctionCallbackInfo<Value>& info) {
@@ -123,6 +137,7 @@ static void CreateMessage(const FunctionCallbackInfo<Value>& args) {
 
 static void Init(Local<Context> context, Local<Object> target) {
   IVAN_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
+  IVAN_SET_PROPERTY(context, target, "getProxyDetails", GetProxyDetails);
   IVAN_SET_PROPERTY(context, target, "isPromise", IsPromise);
   IVAN_SET_PROPERTY(context, target, "runMicrotasks", RunMicrotasks);
   IVAN_SET_PROPERTY(context, target, "enqueueMicrotask", EnqueueMicrotask);
