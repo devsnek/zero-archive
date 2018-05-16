@@ -23,18 +23,18 @@ namespace util {
 static void GetPromiseDetails(const FunctionCallbackInfo<Value>& info) {
   Isolate* isolate = info.GetIsolate();
 
-  Local<Array> ret = Array::New(isolate, 2);
-  info.GetReturnValue().Set(ret);
-
   if (!info[0]->IsPromise())
     return;
 
   Local<Promise> promise = info[0].As<Promise>();
+  Local<Array> ret = Array::New(isolate, 2);
 
   int state = promise->State();
   ret->Set(0, Integer::New(isolate, state));
   if (state != Promise::PromiseState::kPending)
     ret->Set(1, promise->Result());
+
+  info.GetReturnValue().Set(ret);
 }
 
 static void GetProxyDetails(const FunctionCallbackInfo<Value>& info) {
