@@ -39,7 +39,8 @@ using v8::TryCatch;
   V(debug);                      \
   V(performance);                \
   V(tcp);                        \
-  V(inspector_sync);
+  V(inspector_sync);             \
+  V(types);
 
 
 #define V(name) void _ivan_register_##name()

@@ -50,10 +50,6 @@ static void GetProxyDetails(const FunctionCallbackInfo<Value>& info) {
   info.GetReturnValue().Set(ret);
 }
 
-static void IsPromise(const FunctionCallbackInfo<Value>& info) {
-  info.GetReturnValue().Set(info[0]->IsPromise());
-}
-
 static void RunMicrotasks(const FunctionCallbackInfo<Value>& info) {
   info.GetIsolate()->RunMicrotasks();
 }
@@ -138,7 +134,6 @@ static void CreateMessage(const FunctionCallbackInfo<Value>& args) {
 static void Init(Local<Context> context, Local<Object> target) {
   IVAN_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
   IVAN_SET_PROPERTY(context, target, "getProxyDetails", GetProxyDetails);
-  IVAN_SET_PROPERTY(context, target, "isPromise", IsPromise);
   IVAN_SET_PROPERTY(context, target, "runMicrotasks", RunMicrotasks);
   IVAN_SET_PROPERTY(context, target, "enqueueMicrotask", EnqueueMicrotask);
   IVAN_SET_PROPERTY(context, target, "setPromiseRejectionHandler", SetPromiseRejectionHandler);
