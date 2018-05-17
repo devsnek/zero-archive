@@ -56,7 +56,7 @@ void BackgroundTaskRunner::Shutdown() {
   }
 }
 
-size_t BackgroundTaskRunner::NumberOfAvailableBackgroundThreads() const {
+int BackgroundTaskRunner::NumberOfWorkerThreads() {
   return threads_.size();
 }
 
@@ -146,8 +146,8 @@ void IvanPlatform::Shutdown() {
   }
 }
 
-size_t IvanPlatform::NumberOfAvailableBackgroundThreads() {
-  return background_task_runner_->NumberOfAvailableBackgroundThreads();
+int IvanPlatform::NumberOfWorkerThreads() {
+  return background_task_runner_->NumberOfWorkerThreads();
 }
 
 void PerIsolatePlatformData::RunForegroundTask(std::unique_ptr<Task> task) {
@@ -221,9 +221,8 @@ bool PerIsolatePlatformData::FlushForegroundTasksInternal() {
   return did_work;
 }
 
-void IvanPlatform::CallOnBackgroundThread(Task* task,
-                                          ExpectedRuntime expected_runtime) {
-  background_task_runner_->PostTask(std::unique_ptr<Task>(task));
+void IvanPlatform::CallOnWorkerThread(std::unique_ptr<Task> task) {
+  background_task_runner_->PostTask(std::move(task));
 }
 
 std::shared_ptr<PerIsolatePlatformData>
@@ -238,11 +237,16 @@ void IvanPlatform::CallOnForegroundThread(Isolate* isolate, Task* task) {
   ForIsolate(isolate)->PostTask(std::unique_ptr<Task>(task));
 }
 
-void IvanPlatform::CallDelayedOnForegroundThread(Isolate* isolate,
-                                                 Task* task,
-                                                 double delay_in_seconds) {
-  ForIsolate(isolate)->PostDelayedTask(
-    std::unique_ptr<Task>(task), delay_in_seconds);
+void IvanPlatform::CallDelayedOnForegroundThread(
+    Isolate* isolate, Task* task, double delay_in_seconds) {
+  ForIsolate(isolate)->PostDelayedTask(std::unique_ptr<Task>(task), delay_in_seconds);
+}
+
+void IvanPlatform::CallDelayedOnWorkerThread(std::unique_ptr<Task> task,
+                                             double delay_in_seconds) {
+  printf("delayed task queued in %f\n", delay_in_seconds);
+  // ForIsolate(Isolate::GetCurrent())->PostDelayedTask(
+  //   std::move(task), delay_in_seconds);
 }
 
 bool IvanPlatform::FlushForegroundTasks(v8::Isolate* isolate) {
@@ -254,11 +258,6 @@ void IvanPlatform::CancelPendingDelayedTasks(v8::Isolate* isolate) {
 }
 
 bool IvanPlatform::IdleTasksEnabled(Isolate* isolate) { return false; }
-
-std::shared_ptr<v8::TaskRunner>
-IvanPlatform::GetBackgroundTaskRunner(Isolate* isolate) {
-  return background_task_runner_;
-}
 
 std::shared_ptr<v8::TaskRunner>
 IvanPlatform::GetForegroundTaskRunner(Isolate* isolate) {

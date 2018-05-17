@@ -106,7 +106,8 @@ class BackgroundTaskRunner : public v8::TaskRunner {
   void BlockingDrain();
   void Shutdown();
 
-  size_t NumberOfAvailableBackgroundThreads() const;
+  int NumberOfWorkerThreads();
+
  private:
   TaskQueue<v8::Task> background_tasks_;
   std::vector<std::unique_ptr<uv_thread_t>> threads_;
@@ -135,9 +136,9 @@ class IvanPlatform : public MultiIsolatePlatform {
   void Shutdown();
 
   // v8::Platform implementation.
-  size_t NumberOfAvailableBackgroundThreads() override;
-  void CallOnBackgroundThread(v8::Task* task,
-                              ExpectedRuntime expected_runtime) override;
+  int NumberOfWorkerThreads() override;
+  void CallOnWorkerThread(std::unique_ptr<v8::Task> task) override;
+  void CallDelayedOnWorkerThread(std::unique_ptr<v8::Task>, double delay_in_seconds) override;
   void CallOnForegroundThread(v8::Isolate* isolate, v8::Task* task) override;
   void CallDelayedOnForegroundThread(v8::Isolate* isolate, v8::Task* task,
                                      double delay_in_seconds) override;
@@ -151,8 +152,6 @@ class IvanPlatform : public MultiIsolatePlatform {
   void RegisterIsolate(v8::Isolate* isolate, uv_loop_t* loop) override;
   void UnregisterIsolate(v8::Isolate* isolate) override;
 
-  std::shared_ptr<v8::TaskRunner> GetBackgroundTaskRunner(
-      v8::Isolate* isolate) override;
   std::shared_ptr<v8::TaskRunner> GetForegroundTaskRunner(
       v8::Isolate* isolate) override;
 
