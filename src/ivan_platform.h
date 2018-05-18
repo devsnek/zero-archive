@@ -92,13 +92,13 @@ class PerIsolatePlatformData :
   std::vector<DelayedTaskPointer> scheduled_delayed_tasks_;
 };
 
-// This acts as the single background task runner for all Isolates.
-class BackgroundTaskRunner : public v8::TaskRunner {
+// This acts as the single worker threads task runner for all Isolates.
+class WorkerThreadsTaskRunner : public v8::TaskRunner {
  public:
-  explicit BackgroundTaskRunner(int thread_pool_size);
+  explicit WorkerThreadsTaskRunner(int thread_pool_size);
 
   void PostTask(std::unique_ptr<v8::Task> task) override;
-  void PostIdleTask(std::unique_ptr<v8::IdleTask> task) override;
+  void PostIdleTask(std::unique_ptr<v8::IdleTask> task) override { abort(); };
   void PostDelayedTask(std::unique_ptr<v8::Task> task,
                        double delay_in_seconds) override;
   bool IdleTasksEnabled() override { return false; };
@@ -109,7 +109,7 @@ class BackgroundTaskRunner : public v8::TaskRunner {
   int NumberOfWorkerThreads();
 
  private:
-  TaskQueue<v8::Task> background_tasks_;
+  TaskQueue<v8::Task> pending_worker_tasks_;
   std::vector<std::unique_ptr<uv_thread_t>> threads_;
 };
 
@@ -118,7 +118,7 @@ class MultiIsolatePlatform;
 class MultiIsolatePlatform : public v8::Platform {
  public:
   virtual ~MultiIsolatePlatform() { }
-  virtual void DrainBackgroundTasks(v8::Isolate* isolate) = 0;
+  virtual void DrainTasks(v8::Isolate* isolate) = 0;
   virtual void CancelPendingDelayedTasks(v8::Isolate* isolate) = 0;
 
   // These will be called by the `IsolateData` creation/destruction functions.
@@ -131,7 +131,7 @@ class IvanPlatform : public MultiIsolatePlatform {
   explicit IvanPlatform(int thread_pool_size);
   virtual ~IvanPlatform() {}
 
-  void DrainBackgroundTasks(v8::Isolate* isolate) override;
+  void DrainTasks(v8::Isolate* isolate) override;
   void CancelPendingDelayedTasks(v8::Isolate* isolate) override;
   void Shutdown();
 
@@ -142,7 +142,7 @@ class IvanPlatform : public MultiIsolatePlatform {
   void CallOnForegroundThread(v8::Isolate* isolate, v8::Task* task) override;
   void CallDelayedOnForegroundThread(v8::Isolate* isolate, v8::Task* task,
                                      double delay_in_seconds) override;
-  bool IdleTasksEnabled(v8::Isolate* isolate) override;
+  bool IdleTasksEnabled(v8::Isolate*) override { return false; };
   double MonotonicallyIncreasingTime() override;
   double CurrentClockTimeMillis() override;
   v8::TracingController* GetTracingController() override;
@@ -163,7 +163,7 @@ class IvanPlatform : public MultiIsolatePlatform {
                      std::shared_ptr<PerIsolatePlatformData>> per_isolate_;
 
   std::unique_ptr<v8::TracingController> tracing_controller_;
-  std::shared_ptr<BackgroundTaskRunner> background_task_runner_;
+  std::shared_ptr<WorkerThreadsTaskRunner> worker_thread_task_runner_;
 };
 
 }  // namespace ivan

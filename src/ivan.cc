@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
     do {
       uv_run(event_loop, UV_RUN_DEFAULT);
 
-      platform->DrainBackgroundTasks(isolate);
+      platform->DrainTasks(isolate);
 
       ivan::InternalCallbackScope::Run(isolate);
 

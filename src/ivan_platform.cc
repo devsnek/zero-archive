@@ -15,48 +15,50 @@ using v8::Platform;
 using v8::Task;
 using v8::TracingController;
 
-static void BackgroundRunner(void* data) {
-  TaskQueue<Task>* background_tasks = static_cast<TaskQueue<Task>*>(data);
-  while (std::unique_ptr<Task> task = background_tasks->BlockingPop()) {
+namespace {
+
+static void WorkerThreadMain(void* data) {
+  TaskQueue<Task>* pending_worker_tasks = static_cast<TaskQueue<Task>*>(data);
+  while (std::unique_ptr<Task> task = pending_worker_tasks->BlockingPop()) {
     task->Run();
-    background_tasks->NotifyOfCompletion();
+    pending_worker_tasks->NotifyOfCompletion();
   }
 }
 
-BackgroundTaskRunner::BackgroundTaskRunner(int thread_pool_size) {
+} // namespace
+
+WorkerThreadsTaskRunner::WorkerThreadsTaskRunner(int thread_pool_size) {
   for (int i = 0; i < thread_pool_size; i++) {
     std::unique_ptr<uv_thread_t> t { new uv_thread_t() };
-    if (uv_thread_create(t.get(), BackgroundRunner, &background_tasks_) != 0)
+    if (uv_thread_create(t.get(), WorkerThreadMain,
+          &pending_worker_tasks_) != 0) {
       break;
+    }
     threads_.push_back(std::move(t));
   }
 }
 
-void BackgroundTaskRunner::PostTask(std::unique_ptr<Task> task) {
-  background_tasks_.Push(std::move(task));
+void WorkerThreadsTaskRunner::PostTask(std::unique_ptr<Task> task) {
+  pending_worker_tasks_.Push(std::move(task));
 }
 
-void BackgroundTaskRunner::PostIdleTask(std::unique_ptr<v8::IdleTask> task) {
+void WorkerThreadsTaskRunner::PostDelayedTask(
+    std::unique_ptr<v8::Task> task, double delay_in_seconds) {
   UNREACHABLE();
 }
 
-void BackgroundTaskRunner::PostDelayedTask(std::unique_ptr<v8::Task> task,
-                                           double delay_in_seconds) {
-  UNREACHABLE();
+void WorkerThreadsTaskRunner::BlockingDrain() {
+  pending_worker_tasks_.BlockingDrain();
 }
 
-void BackgroundTaskRunner::BlockingDrain() {
-  background_tasks_.BlockingDrain();
-}
-
-void BackgroundTaskRunner::Shutdown() {
-  background_tasks_.Stop();
+void WorkerThreadsTaskRunner::Shutdown() {
+  pending_worker_tasks_.Stop();
   for (size_t i = 0; i < threads_.size(); i++) {
     CHECK_EQ(0, uv_thread_join(threads_[i].get()));
   }
 }
 
-int BackgroundTaskRunner::NumberOfWorkerThreads() {
+int WorkerThreadsTaskRunner::NumberOfWorkerThreads() {
   return threads_.size();
 }
 
@@ -112,7 +114,7 @@ int PerIsolatePlatformData::unref() {
 }
 
 IvanPlatform::IvanPlatform(int thread_pool_size) {
-  background_task_runner_ = std::make_shared<BackgroundTaskRunner>(thread_pool_size);
+  worker_thread_task_runner_ = std::make_shared<WorkerThreadsTaskRunner>(thread_pool_size);
   TracingController* controller = new TracingController();
   tracing_controller_.reset(controller);
 }
@@ -138,7 +140,7 @@ void IvanPlatform::UnregisterIsolate(Isolate* isolate) {
 }
 
 void IvanPlatform::Shutdown() {
-  background_task_runner_->Shutdown();
+  worker_thread_task_runner_->Shutdown();
 
   {
     Mutex::ScopedLock lock(per_isolate_mutex_);
@@ -147,7 +149,7 @@ void IvanPlatform::Shutdown() {
 }
 
 int IvanPlatform::NumberOfWorkerThreads() {
-  return background_task_runner_->NumberOfWorkerThreads();
+  return worker_thread_task_runner_->NumberOfWorkerThreads();
 }
 
 void PerIsolatePlatformData::RunForegroundTask(std::unique_ptr<Task> task) {
@@ -177,7 +179,7 @@ void PerIsolatePlatformData::CancelPendingDelayedTasks() {
   scheduled_delayed_tasks_.clear();
 }
 
-void IvanPlatform::DrainBackgroundTasks(Isolate* isolate) {
+void IvanPlatform::DrainTasks(Isolate* isolate) {
   std::shared_ptr<PerIsolatePlatformData> per_isolate = ForIsolate(isolate);
 
   do {
@@ -185,7 +187,7 @@ void IvanPlatform::DrainBackgroundTasks(Isolate* isolate) {
     // with a specific isolate, so this sometimes does more work than
     // necessary. In the long run, that functionality is probably going to
     // be available anyway, though.
-    background_task_runner_->BlockingDrain();
+    worker_thread_task_runner_->BlockingDrain();
   } while (per_isolate->FlushForegroundTasksInternal());
 }
 
@@ -222,7 +224,7 @@ bool PerIsolatePlatformData::FlushForegroundTasksInternal() {
 }
 
 void IvanPlatform::CallOnWorkerThread(std::unique_ptr<Task> task) {
-  background_task_runner_->PostTask(std::move(task));
+  worker_thread_task_runner_->PostTask(std::move(task));
 }
 
 std::shared_ptr<PerIsolatePlatformData>
@@ -256,8 +258,6 @@ bool IvanPlatform::FlushForegroundTasks(v8::Isolate* isolate) {
 void IvanPlatform::CancelPendingDelayedTasks(v8::Isolate* isolate) {
   ForIsolate(isolate)->CancelPendingDelayedTasks();
 }
-
-bool IvanPlatform::IdleTasksEnabled(Isolate* isolate) { return false; }
 
 std::shared_ptr<v8::TaskRunner>
 IvanPlatform::GetForegroundTaskRunner(Isolate* isolate) {
