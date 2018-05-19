@@ -131,6 +131,25 @@ static void CreateMessage(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(obj);
 }
 
+static void PreviewEntries(const FunctionCallbackInfo<Value>& args) {
+  if (!args[0]->IsObject())
+    return;
+
+  bool is_keyed;
+  Local<Value> entries;
+  if (!args[0].As<Object>()->PreviewEntries(&is_keyed).ToLocal(&entries))
+    return;
+
+  Isolate* isolate = args.GetIsolate();
+  Local<Context> context = isolate->GetCurrentContext();
+
+  Local<Array> ret = Array::New(isolate, 2);
+  ret->Set(context, 0, entries).FromJust();
+  ret->Set(context, 1, Boolean::New(isolate, is_keyed)).FromJust();
+
+  args.GetReturnValue().Set(ret);
+}
+
 static void Init(Local<Context> context, Local<Object> target) {
   IVAN_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
   IVAN_SET_PROPERTY(context, target, "getProxyDetails", GetProxyDetails);
@@ -142,6 +161,7 @@ static void Init(Local<Context> context, Local<Object> target) {
   IVAN_SET_PROPERTY(context, target, "safeToString", SafeToString);
   IVAN_SET_PROPERTY(context, target, "setV8Flags", SetV8Flags);
   IVAN_SET_PROPERTY(context, target, "createMessage", CreateMessage);
+  IVAN_SET_PROPERTY(context, target, "previewEntries", PreviewEntries);
 
 #define V(name) \
   IVAN_SET_PROPERTY(context, target, #name, Promise::PromiseState::name);
