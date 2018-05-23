@@ -1,6 +1,8 @@
 #ifndef SRC_IVAN_H_
 #define SRC_IVAN_H_
 
+#include <stdlib.h>
+
 #include "v8.h"
 
 #ifdef __GNUC__
