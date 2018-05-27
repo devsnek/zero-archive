@@ -47,6 +47,17 @@ inline void IVAN_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
+    const char* value) {
+  v8::Isolate* isolate = context->GetIsolate();
+  USE(target->Set(context,
+                  v8::String::NewFromUtf8(isolate, name),
+                  v8::String::NewFromUtf8(isolate, value)));
+}
+
+inline void IVAN_SET_PROPERTY(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::Object> target,
+    const char* name,
     double value) {
   v8::Isolate* isolate = context->GetIsolate();
   USE(target->Set(context,

@@ -190,6 +190,11 @@ int main(int argc, char** argv) {
     IVAN_SET_PROPERTY(context, process, "argv", pargv);
     for (int i = 0; i < argc; i++)
       USE(pargv->Set(context, i, String::NewFromUtf8(isolate, argv[i])));
+    Local<Object> versions = Object::New(isolate);
+
+    IVAN_SET_PROPERTY(context, process, "versions", versions);
+    IVAN_SET_PROPERTY(context, versions, "v8", V8::GetVersion());
+    IVAN_SET_PROPERTY(context, versions, "uv", uv_version_string());
 
     int argc = 2;
     Local<Value> args[] = {

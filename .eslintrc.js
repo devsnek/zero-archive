@@ -14,7 +14,7 @@ module.exports = {
   },
   env: {
     es6: true,
-    node: true,
+    node: false,
   },
   rules: {
     'strict': ['error', 'global'],
@@ -39,5 +39,7 @@ module.exports = {
   globals: {
     WebAssembly: false,
     BigInt: false,
+    global: false,
+    console: false,
   },
 };
