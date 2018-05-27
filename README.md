@@ -8,17 +8,13 @@ Ivan does not currently have any bare import specifiers but if it did they would
 
 A lot of code in Ivan is inspired from other codebases. Those codebases will be linked at the top of the individual files.
 
-### Finished
-
-- WHATWG Console
-
 ### Todo
 
 ##### In Progress
 
 - W3C Web Performance Timing API
-- WHATWG Events
 - WHATWG Encoding
+- WHATWG Events
 - WHATWG Fetch
 - WHATWG URL
 
@@ -26,3 +22,7 @@ A lot of code in Ivan is inspired from other codebases. Those codebases will be 
 
 - WHATWG Streams
 
+
+### Finished
+
+- WHATWG Console
