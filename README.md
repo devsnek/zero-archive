@@ -14,7 +14,6 @@ A lot of code in Ivan is inspired from other codebases. Those codebases will be 
 
 - W3C Web Performance Timing API
 - WHATWG Encoding
-- WHATWG Events
 - WHATWG Fetch
 - WHATWG URL
 
@@ -26,3 +25,4 @@ A lot of code in Ivan is inspired from other codebases. Those codebases will be 
 ### Finished
 
 - WHATWG Console
+- WHATWG Events
