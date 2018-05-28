@@ -1,7 +1,6 @@
 #include "uv.h"
 #include "v8.h"
 #include "ivan.h"
-#include "ivan_errors.h"
 #include "base_object-inl.h"
 
 using v8::Context;
@@ -48,11 +47,7 @@ class TimerWrap : public BaseObject {
 
       Local<Function> cb = wrap->callback_.Get(isolate);
 
-      v8::TryCatch try_catch(isolate);
-      cb->Call(context, v8::Null(isolate), 0, {});
-      if (try_catch.HasCaught()) {
-        errors::ReportException(isolate, &try_catch);
-      }
+      USE(cb->Call(context, v8::Null(isolate), 0, {}));
     }, timeout, 0);
 
     args.GetReturnValue().Set(err);
