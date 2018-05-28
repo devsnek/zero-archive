@@ -29,5 +29,9 @@ module.exports = {
     TextEncoder: false,
     TextDecoder: false,
     Headers: false,
+    setTimeout: true,
+    setInterval: true,
+    clearTimeout: true,
+    clearInterval: true,
   },
 };

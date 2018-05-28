@@ -26,3 +26,4 @@ A lot of code in Ivan is inspired from other codebases. Those codebases will be 
 
 - WHATWG Console
 - WHATWG Events
+- WHATWG Timers
