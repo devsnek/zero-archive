@@ -10,6 +10,9 @@ A lot of code in Ivan is inspired from other codebases. Those codebases will be 
 
 ### Todo
 
+- **Finish porting tests infra!!!!!!!!!!**
+- Fix loader
+
 ##### In Progress
 
 - W3C Web Performance Timing API
