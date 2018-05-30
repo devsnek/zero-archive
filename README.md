@@ -2,31 +2,29 @@
 
 Ivan is a JavaScript runtime which has native ES Modules and shares many browser spec globals.
 
-Ivan's source is based heavily on Node.js because Ivan is my way of learning about Node.js core.
-
-Ivan does not currently have any bare import specifiers but if it did they would be prefixed with `@ivan`.
-
 A lot of code in Ivan is inspired from other codebases. Those codebases will be linked at the top of the individual files.
 
-### Todo
-
-- **Finish porting tests infra!!!!!!!!!!**
-- Fix loader
+My #1 priority right now is to figure out a stable way to port tests from the [Web Platform Tests][]
+to be runnable by ivan's test system.
+There are thousands of these tests and the gross majority of them are wrapped in html.
+If you can think of a clever way to run them with no/mininmal modification please please please
+hit me up with a pr or issue or tweet or whatever because i really need to start testing things.
 
 ##### In Progress
 
-- W3C Web Performance Timing API
-- WHATWG Encoding
-- WHATWG Fetch
-- WHATWG URL
+- W3C Web Performance Timing API (`performance.now()` works :D)
+- WHATWG Encoding (decoder has weird bugs i haven't had time to dig into)
+- WHATWG Fetch (needed for http imports)
+- **WHATWG URL** (main focus, this will let me finish the loader for files)
+
 
 ##### Planned
 
-- WHATWG Streams
+- WHATWG Streams (needed for fetch)
 
 
 ### Finished
 
 - WHATWG Console
 - WHATWG Events
-- WHATWG Timers
+- WHATWG Timers (could use some optimisation)
