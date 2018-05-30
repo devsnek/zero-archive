@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h> // PATH_MAX
 #include <iterator>  // std::size
 
 #include "v8.h"
@@ -186,16 +187,34 @@ int main(int argc, char** argv) {
     context->SetAlignedPointerInEmbedderData(ivan::EmbedderKeys::kInspector, nullptr);
 
     Local<Object> process = Object::New(isolate);
+
     Local<Array> pargv = Array::New(isolate, argc);
-    IVAN_SET_PROPERTY(context, process, "exit", Exit);
     IVAN_SET_PROPERTY(context, process, "argv", pargv);
     for (int i = 0; i < argc; i++)
       USE(pargv->Set(context, i, String::NewFromUtf8(isolate, argv[i])));
+
     Local<Object> versions = Object::New(isolate);
 
     IVAN_SET_PROPERTY(context, process, "versions", versions);
     IVAN_SET_PROPERTY(context, versions, "v8", V8::GetVersion());
     IVAN_SET_PROPERTY(context, versions, "uv", uv_version_string());
+
+    IVAN_SET_PROPERTY(context, process, "exit", Exit);
+
+    {
+      char buf[PATH_MAX];
+      size_t cwd_len = sizeof(buf);
+      int err = uv_cwd(buf, &cwd_len);
+      if (err) {
+        fprintf(stderr, "uv error");
+        exit(err);
+      }
+
+      Local<String> cwd = String::NewFromUtf8(
+          isolate, buf, String::kNormalString, cwd_len);
+
+      IVAN_SET_PROPERTY(context, process, "cwd", cwd);
+    }
 
     int argc = 2;
     Local<Value> args[] = {
