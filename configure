@@ -1,0 +1,21 @@
+#!/usr/bin/env node
+
+'use strict';
+
+/* eslint-env node */
+
+const { runInThisContext } = require('vm');
+const { readFileSync, writeFileSync } = require('fs');
+
+const argv = (() => {
+  const fn = runInThisContext(readFileSync('./lib/argparse.js'));
+  const namespace = Object.create(null);
+  fn({ namespace });
+  return namespace.default(process.argv);
+})();
+
+const config = {
+  exposeBinding: argv['expose-binding'] || false,
+};
+
+writeFileSync('./config.json', JSON.stringify(config, null, 2));

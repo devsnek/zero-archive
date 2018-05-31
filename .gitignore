@@ -4,3 +4,4 @@ ivan
 .ninja_deps
 .ninja_log
 *.dSYM
+config.json

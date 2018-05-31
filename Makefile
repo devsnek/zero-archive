@@ -10,14 +10,17 @@ INCLUDES = -Ideps/v8/include
 out/ivan: $(V8FILES) out/ivan_blobs.cc $(CFILES) $(HFILES) | out
 	$(CC) $(CFILES) out/ivan_blobs.cc $(V8FILES) $(CFLAGS) $(LIBS) $(INCLUDES) -o $@
 
-out/ivan_blobs.cc: $(JSFILES) | out
-	node tools/blob2c.js $@ $(JSFILES)
+out/ivan_blobs.cc: $(JSFILES) config.json | out
+	node tools/blob2c.js $@ $(JSFILES) config.json
 
 out:
 	mkdir -p out
 
 $(V8FILES):
 	ninja -C deps/v8/out.gn/x64.release v8_monolith
+
+config.json: configure
+	$(error Missing or stale $@, please run ./configure)
 
 clean:
 	rm -rf out

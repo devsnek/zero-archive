@@ -6,7 +6,12 @@
 
 const { statSync, readdirSync, existsSync } = require('fs');
 const path = require('path');
-const { exec, execSync } = require('child_process');
+const { exec } = require('child_process');
+
+if (!require('../config').exposeBinding) {
+  console.error('ivan must be configured with --expose-binding to run tests');
+  process.exit(1);
+}
 
 const readdirRecursive = (root, files = [], prefix = '') => {
   const dir = path.resolve(root, prefix);
@@ -24,15 +29,8 @@ const readdirRecursive = (root, files = [], prefix = '') => {
   return files;
 };
 
-const ivan = path.resolve(__dirname, '..', 'out', 'ivan');
-try {
-  execSync(`${ivan} -e "binding"`);
-} catch (e) {
-  console.error('Compile ivan with binding support');
-  process.exit(1);
-}
-
 const tests = readdirRecursive(path.resolve(process.cwd(), process.argv[2]));
+const ivan = path.resolve(__dirname, '..', 'out', 'ivan');
 
 console.log(`-- Queued ${tests.length} tests --`);
 
