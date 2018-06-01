@@ -4,12 +4,18 @@
 
 /* eslint-env node */
 
-const { statSync, readdirSync, existsSync } = require('fs');
+const {
+  statSync, readdirSync, existsSync,
+  promises: { readFile },
+} = require('fs');
+
 const path = require('path');
 const { exec } = require('child_process');
 
+const { error, log } = console;
+
 if (!require('../config').exposeBinding) {
-  console.error('ivan must be configured with --expose-binding to run tests');
+  error('ivan must be configured with --expose-binding to run tests');
   process.exit(1);
 }
 
@@ -20,7 +26,7 @@ const readdirRecursive = (root, files = [], prefix = '') => {
   }
   if (statSync(dir).isDirectory()) {
     readdirSync(dir)
-      .filter((n) => /^test/.test(n))
+      .filter((n) => n.startsWith('test') && n.endsWith('.js'))
       .forEach((n) => readdirRecursive(root, files, path.join(prefix, n)));
   } else {
     files.push(dir);
@@ -32,19 +38,23 @@ const readdirRecursive = (root, files = [], prefix = '') => {
 const tests = readdirRecursive(path.resolve(process.cwd(), process.argv[2]));
 const ivan = path.resolve(__dirname, '..', 'out', 'ivan');
 
-console.log(`-- Queued ${tests.length} tests --`);
+log(`-- Queued ${tests.length} tests --`);
 
-tests.forEach((filename) => {
-  const command = `${ivan} ${filename}`;
+tests.forEach(async (filename) => {
+  const lines = (await readFile(filename, 'utf8')).split('\n');
+  const args = (lines.find((l) => l.startsWith('// Arguments: ')) || '')
+    .replace('// Arguments: ', '');
+
+  const command = `${ivan}${args ? ` ${args} ` : ''}${filename}`;
   const rel = path.relative(process.cwd(), filename);
   exec(command, (err, stdout, stderr) => {
     if (err) {
-      console.error('FAIL', rel);
-      console.error(stdout);
-      console.error(stderr);
-      console.error('Command:', command);
+      error('FAIL', rel);
+      error(stdout);
+      error(stderr);
+      error('Command:', command);
     } else {
-      console.log('PASS', rel);
+      log('PASS', rel);
     }
   });
 });
