@@ -1,7 +1,6 @@
 #ifndef SRC_IVAN_MODULE_WRAP_H_
 #define SRC_IVAN_MODULE_WRAP_H_
 
-#include <unordered_map>
 #include <string>
 #include <vector>
 #include "base_object-inl.h"
@@ -54,8 +53,6 @@ class ModuleWrap : public BaseObject {
 
   static v8::Persistent<v8::Function> host_initialize_import_meta_object_callback;
   static v8::Persistent<v8::Function> host_import_module_dynamically_callback;
-  static std::unordered_map<int, loader::ModuleWrap*> id_to_module_wrap_map;
-  static std::unordered_multimap<int, loader::ModuleWrap*> module_to_module_wrap_map;
 
   static int Identity_;
 

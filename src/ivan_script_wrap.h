@@ -6,16 +6,34 @@
 namespace ivan {
 namespace ScriptWrap {
 
+static uint32_t script_id = 0;
+
 v8::MaybeLocal<v8::Value> Internal(
     v8::Isolate* isolate, v8::Local<v8::String> filename, v8::Local<v8::String> code) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-  v8::ScriptOrigin origin(filename, v8::Integer::New(isolate, 0), v8::Integer::New(isolate, 0));
+  v8::Local<v8::PrimitiveArray> host_defined_options = v8::PrimitiveArray::New(isolate, 2);
+  host_defined_options->Set(0, v8::Integer::New(isolate, 0));
+
+  v8::Local<v8::Integer> id = v8::Integer::New(isolate, script_id++);
+
+  v8::ScriptOrigin origin(filename,
+                          v8::Integer::New(isolate, 0),
+                          v8::Integer::New(isolate, 0),
+                          v8::False(isolate),
+                          id,
+                          v8::Local<v8::Value>(),
+                          v8::False(isolate),
+                          v8::False(isolate),
+                          v8::False(isolate),
+                          host_defined_options);
   v8::ScriptCompiler::Source source(code, origin);
 
   v8::Local<v8::UnboundScript> script;
   if (v8::ScriptCompiler::CompileUnboundScript(
         isolate, &source, v8::ScriptCompiler::kNoCompileOptions).ToLocal(&script)) {
+    host_defined_options->Set(1, id);
+    id_to_script_map.emplace(id->Value(), v8::Global<v8::UnboundScript>(isolate, script));
     return script->BindToCurrentContext()->Run(context);
   }
 

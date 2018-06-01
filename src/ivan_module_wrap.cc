@@ -27,14 +27,13 @@ using v8::ScriptCompiler;
 using v8::ScriptOrigin;
 using v8::String;
 using v8::TryCatch;
+using v8::UnboundScript;
 using v8::Undefined;
 using v8::Value;
 
 int ModuleWrap::Identity_ = 0;
 v8::Persistent<v8::Function> ModuleWrap::host_initialize_import_meta_object_callback;
 v8::Persistent<v8::Function> ModuleWrap::host_import_module_dynamically_callback;
-std::unordered_map<int, ModuleWrap*> ModuleWrap::id_to_module_wrap_map;
-std::unordered_multimap<int, ModuleWrap*> ModuleWrap::module_to_module_wrap_map;
 
 ModuleWrap::ModuleWrap(Isolate* isolate,
                        Local<Object> object,
@@ -63,6 +62,14 @@ ModuleWrap* ModuleWrap::GetFromID(int id) {
     return nullptr;
 
   return module_wrap_it->second;
+}
+
+static Local<UnboundScript> GetScriptFromID(Isolate* isolate, int id) {
+  auto s_it = id_to_script_map.find(id);
+  if (s_it == id_to_script_map.end())
+    return Local<UnboundScript>();
+
+  return s_it->second.Get(isolate);
 }
 
 ModuleWrap* ModuleWrap::GetFromModule(Local<Module> module) {
@@ -125,8 +132,8 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
   ModuleWrap* obj = new ModuleWrap(isolate, that, module);
   obj->context_.Reset(isolate, context);
 
-  // host_defined_options->Set(0,
-  //     Integer::New(isolate, contextify::SourceType::kModule));
+  host_defined_options->Set(0,
+      Integer::New(isolate, 1));
   host_defined_options->Set(1, Integer::New(isolate, obj->GetID()));
 
   id_to_module_wrap_map[obj->GetID()] = obj;
@@ -330,29 +337,31 @@ MaybeLocal<Promise> ModuleWrap::ImportModuleDynamically(
 
   Local<Function> import_callback = host_import_module_dynamically_callback.Get(iso);
 
-  Local<Value> import_args[] = {
+  Local<Value> import_args[3] = {
     referrer->GetResourceName(),
     Local<Value>(specifier),
-    Undefined(iso),
   };
 
   Local<PrimitiveArray> host_defined_options =
     referrer->GetHostDefinedOptions();
 
   if (host_defined_options->Length() == 2) {
-    // int type = host_defined_options->Get(0).As<Integer>()->Value();
-    // if (type == contextify::SourceType::kScript) {
-    //   int id = host_defined_options->Get(1).As<Integer>()->Value();
-    //   contextify::ContextifyScript* wrap =
-    //       contextify::ContextifyScript::GetFromID(id);
-    //   CHECK_NE(wrap, nullptr);
-    //   import_args[2] = wrap->object();
-    // } else if (type == contextify::SourceType::kModule) {
+    int type = host_defined_options->Get(0).As<Integer>()->Value();
+    if (type == 1) {
+      int id = host_defined_options->Get(1).As<Integer>()->Value();
+      Local<UnboundScript> s = GetScriptFromID(iso, id);
+      CHECK(!s.IsEmpty());
+      Local<Object> o = Object::New(iso);
+      IVAN_SET_PROPERTY(context, o, "url", s->GetScriptName());
+      import_args[2] = o;
+    } else if (type == 1) {
       int id = host_defined_options->Get(1).As<Integer>()->Value();
       ModuleWrap* wrap = ModuleWrap::GetFromID(id);
       CHECK_NE(wrap, nullptr);
       import_args[2] = wrap->object();
-    // }
+    } else {
+      import_args[2] = Undefined(iso);
+    }
   }
 
   MaybeLocal<Value> maybe_result = import_callback->Call(context,

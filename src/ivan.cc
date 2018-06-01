@@ -252,6 +252,8 @@ int main(int argc, char** argv) {
       ivan::errors::ReportException(isolate, &try_catch);
   }
 
+  ivan::id_to_script_map.clear();
+
   platform->UnregisterIsolate(isolate);
   isolate->Dispose();
   V8::Dispose();

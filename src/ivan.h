@@ -2,6 +2,7 @@
 #define SRC_IVAN_H_
 
 #include <stdlib.h>
+#include <unordered_map>
 
 #include "v8.h"
 
@@ -235,6 +236,14 @@ enum EmbedderKeys {
 static v8::Eternal<v8::Function> promise_reject_handler;
 static v8::Eternal<v8::Function> next_tick_handler;
 static v8::Eternal<v8::Function> exit_handler;
+
+namespace loader {
+class ModuleWrap;
+}
+
+static std::unordered_map<int, loader::ModuleWrap*> id_to_module_wrap_map;
+static std::unordered_multimap<int, loader::ModuleWrap*> module_to_module_wrap_map;
+static std::unordered_map<int, v8::Global<v8::UnboundScript>> id_to_script_map;
 
 class InternalCallbackScope {
  public:
