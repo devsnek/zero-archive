@@ -16,6 +16,7 @@ const argv = (() => {
 
 const config = {
   exposeBinding: argv['expose-binding'] || false,
+  allowNativesSyntax: argv['allow-natives-syntax'] || false,
 };
 
 writeFileSync('./config.json', JSON.stringify(config, null, 2));
