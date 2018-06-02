@@ -8,11 +8,12 @@ const {
   statSync, readdirSync, existsSync,
   promises: { readFile },
 } = require('fs');
-
 const path = require('path');
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 
 const { error, log } = console;
+
+const RegExpEscape = (s) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 
 if (!require('../config').exposeBinding) {
   error('ivan must be configured with --expose-binding to run tests');
@@ -40,21 +41,59 @@ const ivan = path.resolve(__dirname, '..', 'out', 'ivan');
 
 log(`-- Queued ${tests.length} tests --`);
 
-tests.forEach(async (filename) => {
-  const lines = (await readFile(filename, 'utf8')).split('\n');
-  const args = (lines.find((l) => l.startsWith('// Arguments: ')) || '')
-    .replace('// Arguments: ', '');
-
-  const command = `${ivan}${args ? ` ${args} ` : ''}${filename}`;
-  const rel = path.relative(process.cwd(), filename);
-  exec(command, (err, stdout, stderr) => {
-    if (err) {
-      error('FAIL', rel);
-      error(stdout);
-      error(stderr);
-      error('Command:', command);
-    } else {
-      log('PASS', rel);
-    }
+async function exec(command, args) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args);
+    let output = '';
+    child.stdout.on('data', (d) => {
+      output += d;
+    });
+    child.stderr.on('data', (d) => {
+      output += d;
+    });
+    child.on('close', (code) => {
+      resolve({ code, output });
+    });
   });
+}
+
+tests.forEach(async (filename) => {
+  const rel = path.relative(process.cwd(), filename);
+  const isMessageTest = /\/test\/message\//.test(filename);
+
+  let { code, output } = await exec(ivan, [filename]);
+
+  if (isMessageTest) {
+    const patterns = (await readFile(filename.replace('.js', '.out'), 'utf8'))
+      .split('\n')
+      .map((line) => {
+        const pattern = RegExpEscape(line.trimRight()).replace(/\\\*/g, '.*');
+        return new RegExp(`^${pattern}$`);
+      });
+
+    const outlines = output.split('\n');
+
+    patterns.forEach((expected, index) => {
+      const actual = outlines[index];
+      if (expected.test(actual)) {
+        return;
+      }
+
+      error('match failed');
+      error(`line=${index + 1}`);
+      error(`expect=${expected}`);
+      error(`actual=${actual}`);
+      code = -1;
+    });
+  }
+
+  if (code < 0) {
+    error('FAIL', rel);
+    error(output);
+    error('Command:', `${ivan} ${filename}`);
+
+    return;
+  }
+
+  log('PASS', rel);
 });
