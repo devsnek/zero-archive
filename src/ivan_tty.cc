@@ -78,6 +78,8 @@ class TTYWrap : public BaseObject {
 
   static void Write(const FunctionCallbackInfo<Value>& args) {
     Isolate* isolate = args.GetIsolate();
+    InternalCallbackScope callback_scope(isolate);
+
     TTYWrap* obj;
     ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
 

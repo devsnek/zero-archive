@@ -42,6 +42,7 @@ class TimerWrap : public BaseObject {
     int err = uv_timer_start(&wrap->handle_, [](uv_timer_t* timer) {
       auto wrap = static_cast<TimerWrap*>(timer->data);
       Isolate* isolate = wrap->isolate();
+      InternalCallbackScope callback_scope(isolate);
       v8::HandleScope handle_scope(isolate);
       Local<Context> context = isolate->GetCurrentContext();
 
