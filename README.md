@@ -13,9 +13,10 @@ hit me up with a pr or issue or tweet or whatever because i really need to start
 ##### In Progress
 
 - W3C Web Performance Timing API (`performance.now()` works :D)
+- W3C Web Cryptography API
 - WHATWG Encoding (decoder has weird bugs i haven't had time to dig into)
 - WHATWG Fetch (needed for http imports)
-- **WHATWG URL** (main focus, this will let me finish the loader for files)
+- WHATWG URL
 
 
 ##### Planned
