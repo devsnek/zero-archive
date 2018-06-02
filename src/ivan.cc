@@ -14,6 +14,7 @@
 
 using v8::Array;
 using v8::ArrayBuffer;
+using v8::Boolean;
 using v8::Context;
 using v8::HandleScope;
 using v8::Function;
@@ -142,6 +143,31 @@ static void Exit(const FunctionCallbackInfo<Value>& args) {
   exit(args[0]->Int32Value());
 }
 
+static void SetCallbacks(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+
+  ivan::promise_reject_handler.Set(isolate, args[0].As<Function>());
+  ivan::next_tick_handler.Set(isolate, args[1].As<Function>());
+  ivan::exit_handler.Set(isolate, args[2].As<Function>());
+
+  isolate->SetPromiseRejectCallback([](v8::PromiseRejectMessage message) {
+    Local<Promise> promise = message.GetPromise();
+    Isolate* isolate = promise->GetIsolate();
+    v8::PromiseRejectEvent event = message.GetEvent();
+    Local<Context> context = isolate->GetCurrentContext();
+
+    Local<Value> value = message.GetValue();
+    if (value.IsEmpty())
+      value = v8::Undefined(isolate);
+
+    Local<Boolean> handled = Boolean::New(isolate, event == v8::kPromiseHandlerAddedAfterReject);
+    Local<Value> args[] = { promise, value, handled };
+
+    Local<Function> handler = ivan::promise_reject_handler.Get(isolate);
+    USE(handler->Call(context, v8::Undefined(isolate), 3, args));
+  });
+}
+
 static const char* v8_argv[] = {
   "--harmony-class-fields",
   "--harmony-static-fields",
@@ -216,10 +242,11 @@ int main(int argc, char** argv) {
       IVAN_SET_PROPERTY(context, process, "cwd", cwd);
     }
 
-    int argc = 2;
+    int argc = 3;
     Local<Value> args[] = {
       process,
       FunctionTemplate::New(isolate, Bindings)->GetFunction(),
+      FunctionTemplate::New(isolate, SetCallbacks)->GetFunction(),
     };
 
     TryCatch try_catch(isolate);

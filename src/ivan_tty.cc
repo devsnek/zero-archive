@@ -66,6 +66,7 @@ class TTYWrap : public BaseObject {
   static void ReadCallback(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
     TTYWrap* obj = reinterpret_cast<TTYWrap*>(stream->data);
     Isolate* isolate = obj->isolate();
+    InternalCallbackScope callback_scope(isolate);
     Local<Context> context = isolate->GetCurrentContext();
 
     Local<Value> args[] = {

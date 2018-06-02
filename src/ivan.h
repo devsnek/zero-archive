@@ -253,8 +253,9 @@ class InternalCallbackScope {
 
   static void Run(v8::Isolate* isolate) {
     isolate->RunMicrotasks();
-    if (!next_tick_handler.IsEmpty())
+    if (!next_tick_handler.IsEmpty()) {
       next_tick_handler.Get(isolate)->Call(v8::Undefined(isolate), 0, nullptr);
+    }
   }
  private:
   v8::Isolate* isolate_;
