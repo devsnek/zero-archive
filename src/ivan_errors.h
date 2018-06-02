@@ -17,6 +17,11 @@ static void ReportException(v8::Isolate* isolate, v8::TryCatch* try_catch) {
   v8::String::Utf8Value exception(isolate, try_catch->Exception());
   const char* exception_string = ToCString(exception);
   v8::Local<v8::Message> message = try_catch->Message();
+
+  v8::Local<v8::Value> stack_trace_string;
+  bool has_stack = try_catch->StackTrace(context).ToLocal(&stack_trace_string) &&
+      stack_trace_string->IsString();
+
   if (message.IsEmpty()) {
     // V8 didn't provide any extra information about this error; just
     // print the exception.
@@ -27,7 +32,7 @@ static void ReportException(v8::Isolate* isolate, v8::TryCatch* try_catch) {
     int offset = message->GetStartColumn(context).FromJust();
     printf("wasm-function[%d]:%d: %s\n", function_index, offset,
            exception_string);
-  } else {
+  } else if (!has_stack) {
     // Print (filename):(line number): (message).
     v8::String::Utf8Value filename(isolate,
                                    message->GetScriptOrigin().ResourceName());
@@ -52,9 +57,8 @@ static void ReportException(v8::Isolate* isolate, v8::TryCatch* try_catch) {
       printf("\n");
     }
   }
-  v8::Local<v8::Value> stack_trace_string;
-  if (try_catch->StackTrace(context).ToLocal(&stack_trace_string) &&
-      stack_trace_string->IsString()) {
+
+  if (has_stack) {
     v8::String::Utf8Value stack_trace(isolate, v8::Local<v8::String>::Cast(stack_trace_string));
     printf("%s\n", ToCString(stack_trace));
   }
