@@ -19,4 +19,14 @@ const config = {
   allowNativesSyntax: argv['allow-natives-syntax'] || false,
 };
 
-writeFileSync('./config.json', JSON.stringify(config, null, 2));
+const current = (() => {
+  try {
+    return readFileSync('./config.json', 'utf8');
+  } catch (err) {
+    return null;
+  }
+})();
+const source = JSON.stringify(config, null, 2);
+if (current === null || current !== source) {
+  writeFileSync('./config.json', source);
+}
