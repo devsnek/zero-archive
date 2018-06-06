@@ -25,12 +25,15 @@ const readdirRecursive = (root, files = [], prefix = '') => {
   if (!existsSync(dir)) {
     return files;
   }
+
   if (statSync(dir).isDirectory()) {
     readdirSync(dir)
-      .filter((n) => n.startsWith('test') && n.endsWith('.js'))
       .forEach((n) => readdirRecursive(root, files, path.join(prefix, n)));
   } else {
-    files.push(dir);
+    const name = path.basename(dir);
+    if (name.startsWith('test') && name.endsWith('.js')) {
+      files.push(dir);
+    }
   }
 
   return files;
