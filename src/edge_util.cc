@@ -1,5 +1,5 @@
 #include "v8.h"
-#include "ivan.h"
+#include "edge.h"
 
 using v8::Array;
 using v8::Boolean;
@@ -17,7 +17,7 @@ using v8::Proxy;
 using v8::Value;
 using v8::V8;
 
-namespace ivan {
+namespace edge {
 namespace util {
 
 static void GetPromiseDetails(const FunctionCallbackInfo<Value>& info) {
@@ -104,19 +104,19 @@ static void CreateMessage(const FunctionCallbackInfo<Value>& args) {
   int end_column;
 
   if (msg->GetSourceLine(context).ToLocal(&source_line))
-    IVAN_SET_PROPERTY(context, obj, "sourceLine", source_line);
+    EDGE_SET_PROPERTY(context, obj, "sourceLine", source_line);
 
-  IVAN_SET_PROPERTY(context, obj, "resourceName",
+  EDGE_SET_PROPERTY(context, obj, "resourceName",
       msg->GetScriptResourceName()->ToString());
 
   if (msg->GetLineNumber(context).To(&line_number))
-    IVAN_SET_PROPERTY(context, obj, "lineNumber", line_number);
+    EDGE_SET_PROPERTY(context, obj, "lineNumber", line_number);
 
   if (msg->GetStartColumn(context).To(&start_column))
-    IVAN_SET_PROPERTY(context, obj, "startColumn", start_column);
+    EDGE_SET_PROPERTY(context, obj, "startColumn", start_column);
 
   if (msg->GetEndColumn(context).To(&end_column))
-    IVAN_SET_PROPERTY(context, obj, "endColumn", end_column);
+    EDGE_SET_PROPERTY(context, obj, "endColumn", end_column);
 
   args.GetReturnValue().Set(obj);
 }
@@ -141,18 +141,18 @@ static void PreviewEntries(const FunctionCallbackInfo<Value>& args) {
 }
 
 static void Init(Local<Context> context, Local<Object> target) {
-  IVAN_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
-  IVAN_SET_PROPERTY(context, target, "getProxyDetails", GetProxyDetails);
-  IVAN_SET_PROPERTY(context, target, "runMicrotasks", RunMicrotasks);
-  IVAN_SET_PROPERTY(context, target, "enqueueMicrotask", EnqueueMicrotask);
-  IVAN_SET_PROPERTY(context, target, "setPromiseRejectionHandler", SetPromiseRejectionHandler);
-  IVAN_SET_PROPERTY(context, target, "safeToString", SafeToString);
-  IVAN_SET_PROPERTY(context, target, "setV8Flags", SetV8Flags);
-  IVAN_SET_PROPERTY(context, target, "createMessage", CreateMessage);
-  IVAN_SET_PROPERTY(context, target, "previewEntries", PreviewEntries);
+  EDGE_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
+  EDGE_SET_PROPERTY(context, target, "getProxyDetails", GetProxyDetails);
+  EDGE_SET_PROPERTY(context, target, "runMicrotasks", RunMicrotasks);
+  EDGE_SET_PROPERTY(context, target, "enqueueMicrotask", EnqueueMicrotask);
+  EDGE_SET_PROPERTY(context, target, "setPromiseRejectionHandler", SetPromiseRejectionHandler);
+  EDGE_SET_PROPERTY(context, target, "safeToString", SafeToString);
+  EDGE_SET_PROPERTY(context, target, "setV8Flags", SetV8Flags);
+  EDGE_SET_PROPERTY(context, target, "createMessage", CreateMessage);
+  EDGE_SET_PROPERTY(context, target, "previewEntries", PreviewEntries);
 
 #define V(name) \
-  IVAN_SET_PROPERTY(context, target, #name, Promise::PromiseState::name);
+  EDGE_SET_PROPERTY(context, target, #name, Promise::PromiseState::name);
   V(kPending);
   V(kFulfilled);
   V(kRejected);
@@ -160,6 +160,6 @@ static void Init(Local<Context> context, Local<Object> target) {
 }
 
 }  // namespace util
-}  // namespace ivan
+}  // namespace edge
 
-IVAN_REGISTER_INTERNAL(util, ivan::util::Init);
+EDGE_REGISTER_INTERNAL(util, edge::util::Init);

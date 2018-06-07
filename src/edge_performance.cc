@@ -1,7 +1,7 @@
 #include <uv.h>
 
 #include "v8.h"
-#include "ivan.h"
+#include "edge.h"
 
 using v8::ArrayBuffer;
 using v8::Context;
@@ -12,7 +12,7 @@ using v8::Object;
 using v8::Uint32Array;
 using v8::Value;
 
-namespace ivan {
+namespace edge {
 namespace performance {
 
 uint64_t timeOrigin = 0;
@@ -29,11 +29,11 @@ static void now(const FunctionCallbackInfo<Value>& args) {
 void Init(Local<Context> context, Local<Object> target) {
   timeOrigin = uv_hrtime();
 
-  IVAN_SET_PROPERTY(context, target, "now", now);
-  IVAN_SET_PROPERTY(context, target, "timeOrigin", static_cast<double>(timeOrigin) / NS_PER_MS);
+  EDGE_SET_PROPERTY(context, target, "now", now);
+  EDGE_SET_PROPERTY(context, target, "timeOrigin", static_cast<double>(timeOrigin) / NS_PER_MS);
 }
 
 }  // namespace performance
-}  // namespace ivan
+}  // namespace edge
 
-IVAN_REGISTER_INTERNAL(performance, ivan::performance::Init);
+EDGE_REGISTER_INTERNAL(performance, edge::performance::Init);

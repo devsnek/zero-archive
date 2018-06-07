@@ -8,19 +8,19 @@ const path = require('path');
 const [output, ...inputs] = process.argv.slice(2);
 
 const TEMPLATE = `\
-#include "../src/ivan.h"
-#include "../src/ivan_blobs.h"
+#include "../src/edge.h"
+#include "../src/edge_blobs.h"
 #include "v8.h"
 
 using namespace v8;
 
-namespace ivan {
+namespace edge {
 namespace blobs {
 
 {definitions}
 
 Local<String> MainSource(Isolate* isolate) {
-  return ivan_value.ToStringChecked(isolate);
+  return edge_value.ToStringChecked(isolate);
 };
 
 void DefineJavaScript(Isolate* isolate, Local<Object> target) {
@@ -28,7 +28,7 @@ void DefineJavaScript(Isolate* isolate, Local<Object> target) {
 }
 
 }  // namespace blobs
-}  // namespace ivan
+}  // namespace edge
 `;
 
 const ONE_BYTE_STRING = `

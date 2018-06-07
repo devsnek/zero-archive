@@ -1,5 +1,5 @@
 #include "v8.h"
-#include "ivan.h"
+#include "edge.h"
 
 using v8::Context;
 using v8::FunctionCallbackInfo;
@@ -7,7 +7,7 @@ using v8::Local;
 using v8::Object;
 using v8::Value;
 
-namespace ivan {
+namespace edge {
 namespace types {
 
 #define VALUE_METHOD_MAP(V)                                                   \
@@ -47,12 +47,12 @@ namespace types {
 
 void Init(Local<Context> context, Local<Object> target) {
 #define V(type) \
-  IVAN_SET_PROPERTY(context, target, "is"#type, Is##type);
+  EDGE_SET_PROPERTY(context, target, "is"#type, Is##type);
   VALUE_METHOD_MAP(V)
 #undef V
 }
 
 }  // namespace types
-}  // namespace ivan
+}  // namespace edge
 
-IVAN_REGISTER_INTERNAL(types, ivan::types::Init);
+EDGE_REGISTER_INTERNAL(types, edge::types::Init);

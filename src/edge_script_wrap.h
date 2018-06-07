@@ -1,9 +1,9 @@
-#ifndef SRC_IVAN_SCRIPT_WRAP_H_
-#define SRC_IVAN_SCRIPT_WRAP_H_
+#ifndef SRC_EDGE_SCRIPT_WRAP_H_
+#define SRC_EDGE_SCRIPT_WRAP_H_
 
 #include "v8.h"
 
-namespace ivan {
+namespace edge {
 namespace ScriptWrap {
 
 static uint32_t script_id = 0;
@@ -49,12 +49,12 @@ static void Exposed(const v8::FunctionCallbackInfo<v8::Value>& info) {
 }
 
 void Init(v8::Local<v8::Context> context, v8::Local<v8::Object> exports) {
-  IVAN_SET_PROPERTY(context, exports, "run", Exposed);
+  EDGE_SET_PROPERTY(context, exports, "run", Exposed);
 }
 
 }  // namespace ScriptWrap
-}  // namespace ivan
+}  // namespace edge
 
-IVAN_REGISTER_INTERNAL(script_wrap, ivan::ScriptWrap::Init);
+EDGE_REGISTER_INTERNAL(script_wrap, edge::ScriptWrap::Init);
 
-#endif  // SRC_IVAN_SCRIPT_WRAP_H_
+#endif  // SRC_EDGE_SCRIPT_WRAP_H_

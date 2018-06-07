@@ -7,10 +7,10 @@ JSFILES = $(shell find lib -type f -name '*.js')
 V8FILES = $(shell echo deps/v8/out.gn/x64.release/obj/{libv8_monolith,third_party/icu/libicu{uc,i18n}}.a)
 INCLUDES = -Ideps/v8/include
 
-out/ivan: $(V8FILES) out/ivan_blobs.cc $(CFILES) $(HFILES) | out
-	$(CC) $(CFILES) out/ivan_blobs.cc $(V8FILES) $(CFLAGS) $(LIBS) $(INCLUDES) -o $@
+out/edge: $(V8FILES) out/edge_blobs.cc $(CFILES) $(HFILES) | out
+	$(CC) $(CFILES) out/edge_blobs.cc $(V8FILES) $(CFLAGS) $(LIBS) $(INCLUDES) -o $@
 
-out/ivan_blobs.cc: $(JSFILES) config.json | out
+out/edge_blobs.cc: $(JSFILES) config.json | out
 	node tools/blob2c.js $@ $(JSFILES) config.json
 
 out:

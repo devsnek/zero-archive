@@ -1,5 +1,5 @@
-#ifndef SRC_IVAN_H_
-#define SRC_IVAN_H_
+#ifndef SRC_EDGE_H_
+#define SRC_EDGE_H_
 
 #include <stdlib.h>
 #include <unordered_map>
@@ -44,7 +44,7 @@
 
 template <typename T> inline void USE(T&&) {};
 
-inline void IVAN_SET_PROPERTY(
+inline void EDGE_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
@@ -55,7 +55,7 @@ inline void IVAN_SET_PROPERTY(
                   v8::String::NewFromUtf8(isolate, value)));
 }
 
-inline void IVAN_SET_PROPERTY(
+inline void EDGE_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
@@ -66,7 +66,7 @@ inline void IVAN_SET_PROPERTY(
                   v8::Number::New(isolate, value)));
 }
 
-inline void IVAN_SET_PROPERTY(
+inline void EDGE_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
@@ -77,15 +77,15 @@ inline void IVAN_SET_PROPERTY(
                   v8::Integer::New(isolate, value)));
 }
 
-inline void IVAN_SET_PROPERTY(
+inline void EDGE_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
     size_t value) {
-  return IVAN_SET_PROPERTY(context, target, name, (int32_t) value);
+  return EDGE_SET_PROPERTY(context, target, name, (int32_t) value);
 }
 
-inline void IVAN_SET_PROPERTY(
+inline void EDGE_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
@@ -95,20 +95,20 @@ inline void IVAN_SET_PROPERTY(
                   value));
 }
 
-inline void IVAN_SET_PROPERTY(
+inline void EDGE_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
     v8::FunctionCallback fn) {
   v8::Isolate* isolate = context->GetIsolate();
-  return IVAN_SET_PROPERTY(context, target, name,
+  return EDGE_SET_PROPERTY(context, target, name,
       v8::FunctionTemplate::New(
         isolate, fn,
         v8::Local<v8::Value>(), v8::Local<v8::Signature>(), 0,
         v8::ConstructorBehavior::kThrow)->GetFunction());
 }
 
-inline void IVAN_SET_PROTO_PROP(
+inline void EDGE_SET_PROTO_PROP(
     v8::Local<v8::Context> context,
     v8::Local<v8::FunctionTemplate> that,
     const char* name,
@@ -119,18 +119,18 @@ inline void IVAN_SET_PROTO_PROP(
       v8::FunctionTemplate::New(isolate, callback));
 }
 
-#define IVAN_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
+#define EDGE_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
 
-#define IVAN_THROW_EXCEPTION(isolate, message) \
+#define EDGE_THROW_EXCEPTION(isolate, message) \
   (void) isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate, message)))
 
-#define IVAN_REGISTER_INTERNAL(name, fn)                                      \
-  static ivan::ivan_module _ivan_module_##name = {#name, fn};                 \
-  void _ivan_register_##name() {                                              \
-    ivan_module_register(&_ivan_module_##name);                               \
+#define EDGE_REGISTER_INTERNAL(name, fn)                                      \
+  static edge::edge_module _edge_module_##name = {#name, fn};                 \
+  void _edge_register_##name() {                                              \
+    edge_module_register(&_edge_module_##name);                               \
   }
 
-namespace ivan {
+namespace edge {
 
 template <typename T, size_t N>
 inline constexpr size_t arraysize(const T(&)[N]) { return N; }
@@ -218,15 +218,15 @@ inline char* Calloc(size_t n) { return Calloc<char>(n); }
 inline char* UncheckedMalloc(size_t n) { return UncheckedMalloc<char>(n); }
 inline char* UncheckedCalloc(size_t n) { return UncheckedCalloc<char>(n); }
 
-typedef void (*IvanModuleCallback)(v8::Local<v8::Context>, v8::Local<v8::Object>);
+typedef void (*edgeModuleCallback)(v8::Local<v8::Context>, v8::Local<v8::Object>);
 
-struct ivan_module {
+struct edge_module {
   const char* im_name;
-  IvanModuleCallback im_function;
-  struct ivan_module* im_link;
+  edgeModuleCallback im_function;
+  struct edge_module* im_link;
 };
 
-void ivan_module_register(void*);
+void edge_module_register(void*);
 
 enum EmbedderKeys {
   kBindingCache,
@@ -261,6 +261,6 @@ class InternalCallbackScope {
   v8::Isolate* isolate_;
 };
 
-}  // namespace ivan
+}  // namespace edge
 
-#endif  // SRC_IVAN_H_
+#endif  // SRC_EDGE_H_

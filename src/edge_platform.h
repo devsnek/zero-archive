@@ -1,5 +1,5 @@
-#ifndef SRC_IVAN_PLATFORM_H_
-#define SRC_IVAN_PLATFORM_H_
+#ifndef SRC_EDGE_PLATFORM_H_
+#define SRC_EDGE_PLATFORM_H_
 
 #include <uv.h>
 
@@ -10,12 +10,12 @@
 
 #include "v8.h"
 #include "libplatform/libplatform.h"
-#include "ivan.h"
-#include "ivan_mutex.h"
+#include "edge.h"
+#include "edge_mutex.h"
 
-namespace ivan {
+namespace edge {
 
-class IvanPlatform;
+class EdgePlatform;
 class IsolateData;
 class PerIsolatePlatformData;
 
@@ -126,10 +126,10 @@ class MultiIsolatePlatform : public v8::Platform {
   virtual void UnregisterIsolate(v8::Isolate* isolate) = 0;
 };
 
-class IvanPlatform : public MultiIsolatePlatform {
+class EdgePlatform : public MultiIsolatePlatform {
  public:
-  explicit IvanPlatform(int thread_pool_size);
-  virtual ~IvanPlatform() {}
+  explicit EdgePlatform(int thread_pool_size);
+  virtual ~EdgePlatform() {}
 
   void DrainTasks(v8::Isolate* isolate) override;
   void CancelPendingDelayedTasks(v8::Isolate* isolate) override;
@@ -166,6 +166,6 @@ class IvanPlatform : public MultiIsolatePlatform {
   std::shared_ptr<WorkerThreadsTaskRunner> worker_thread_task_runner_;
 };
 
-}  // namespace ivan
+}  // namespace edge
 
-#endif  // SRC_IVAN_PLATFORM_H_
+#endif  // SRC_EDGE_PLATFORM_H_

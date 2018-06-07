@@ -1,10 +1,10 @@
-#ifndef SRC_IVAN_MUTEX_H_
-#define SRC_IVAN_MUTEX_H_
+#ifndef SRC_EDGE_MUTEX_H_
+#define SRC_EDGE_MUTEX_H_
 
-#include "ivan.h"
+#include "edge.h"
 #include "uv.h"
 
-namespace ivan {
+namespace edge {
 
 template <typename Traits> class ConditionVariableBase;
 template <typename Traits> class MutexBase;
@@ -182,6 +182,6 @@ MutexBase<Traits>::ScopedUnlock::~ScopedUnlock() {
   Traits::mutex_lock(&mutex_.mutex_);
 }
 
-}  // namespace ivan
+}  // namespace edge
 
-#endif  // SRC_IVAN_MUTEX_H_
+#endif  // SRC_EDGE_MUTEX_H_

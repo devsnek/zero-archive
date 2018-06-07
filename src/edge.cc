@@ -6,11 +6,11 @@
 #include <iterator>  // std::size
 
 #include "v8.h"
-#include "ivan.h"
-#include "ivan_script_wrap.h"
-#include "ivan_blobs.h"
-#include "ivan_errors.h"
-#include "ivan_platform.h"
+#include "edge.h"
+#include "edge_script_wrap.h"
+#include "edge_blobs.h"
+#include "edge_errors.h"
+#include "edge_platform.h"
 
 using v8::Array;
 using v8::ArrayBuffer;
@@ -31,7 +31,7 @@ using v8::Platform;
 using v8::Promise;
 using v8::TryCatch;
 
-#define IVAN_INTERNAL_MODULES(V) \
+#define EDGE_INTERNAL_MODULES(V) \
   V(encoding);                   \
   V(util);                       \
   V(module_wrap);                \
@@ -46,23 +46,23 @@ using v8::TryCatch;
   V(timer_wrap);                 \
 
 
-#define V(name) void _ivan_register_##name()
-IVAN_INTERNAL_MODULES(V)
+#define V(name) void _edge_register_##name()
+EDGE_INTERNAL_MODULES(V)
 #undef V
 
-namespace ivan {
+namespace edge {
 
-static ivan_module* modlist;
+static edge_module* modlist;
 
-void ivan_module_register(void* m) {
-  struct ivan_module* mp = reinterpret_cast<struct ivan_module*>(m);
+void edge_module_register(void* m) {
+  struct edge_module* mp = reinterpret_cast<struct edge_module*>(m);
 
   mp->im_link = modlist;
   modlist = mp;
 }
 
-inline struct ivan_module* get_module(const char* name) {
-  struct ivan_module* mp;
+inline struct edge_module* get_module(const char* name) {
+  struct edge_module* mp;
 
   for (mp = modlist; mp != nullptr; mp = mp->im_link) {
     if (strcmp(mp->im_name, name) == 0)
@@ -80,7 +80,7 @@ static void DebugLog(const FunctionCallbackInfo<Value>& info) {
   String::Utf8Value utf8(isolate, info[0].As<String>());
   bool prefix = info[1]->IsTrue();
 
-  fprintf(stdout, "%s%s", prefix ? "[IVAN] " : "", *utf8);
+  fprintf(stdout, "%s%s", prefix ? "[edge] " : "", *utf8);
   fflush(stdout);
 }
 
@@ -90,19 +90,19 @@ static void DebugError(const FunctionCallbackInfo<Value>& info) {
   String::Utf8Value utf8(isolate, info[0].As<String>());
   bool prefix = info[1]->IsTrue();
 
-  fprintf(stderr, "%s%s", prefix ? "[IVAN] " : "", *utf8);
+  fprintf(stderr, "%s%s", prefix ? "[edge] " : "", *utf8);
   fflush(stderr);
 }
 
 static void Init(Local<Context> context, Local<Object> exports) {
-  IVAN_SET_PROPERTY(context, exports, "log", DebugLog);
-  IVAN_SET_PROPERTY(context, exports, "error", DebugError);
+  EDGE_SET_PROPERTY(context, exports, "log", DebugLog);
+  EDGE_SET_PROPERTY(context, exports, "error", DebugError);
 }
 
 }  // namespace js_debug
-}  // namespace ivan
+}  // namespace edge
 
-IVAN_REGISTER_INTERNAL(debug, ivan::js_debug::Init);
+EDGE_REGISTER_INTERNAL(debug, edge::js_debug::Init);
 
 static void Bindings(const FunctionCallbackInfo<Value>& info) {
   Isolate* isolate = info.GetIsolate();
@@ -113,7 +113,7 @@ static void Bindings(const FunctionCallbackInfo<Value>& info) {
   Local<String> req = info[0].As<String>();
 
   Local<Object> cache =
-      context->GetEmbedderData(ivan::EmbedderKeys::kBindingCache).As<Object>();
+      context->GetEmbedderData(edge::EmbedderKeys::kBindingCache).As<Object>();
   if (cache->HasOwnProperty(context, req).FromMaybe(false)) {
     info.GetReturnValue().Set(cache->Get(context, req).ToLocalChecked());
     return;
@@ -124,13 +124,13 @@ static void Bindings(const FunctionCallbackInfo<Value>& info) {
   Local<Object> exports = Object::New(isolate);
 
   if (strcmp(*request, "natives") == 0) {
-    ivan::blobs::DefineJavaScript(isolate, exports);
+    edge::blobs::DefineJavaScript(isolate, exports);
   } else {
-    ivan::ivan_module* mod = ivan::get_module(*request);
+    edge::edge_module* mod = edge::get_module(*request);
     if (mod != nullptr) {
       mod->im_function(context, exports);
     } else {
-      IVAN_THROW_EXCEPTION(isolate, "unknown binding");
+      EDGE_THROW_EXCEPTION(isolate, "unknown binding");
       return;
     }
   }
@@ -146,9 +146,9 @@ static void Exit(const FunctionCallbackInfo<Value>& args) {
 static void SetCallbacks(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
-  ivan::promise_reject_handler.Set(isolate, args[0].As<Function>());
-  ivan::next_tick_handler.Set(isolate, args[1].As<Function>());
-  ivan::exit_handler.Set(isolate, args[2].As<Function>());
+  edge::promise_reject_handler.Set(isolate, args[0].As<Function>());
+  edge::next_tick_handler.Set(isolate, args[1].As<Function>());
+  edge::exit_handler.Set(isolate, args[2].As<Function>());
 
   isolate->SetPromiseRejectCallback([](v8::PromiseRejectMessage message) {
     Local<Promise> promise = message.GetPromise();
@@ -163,7 +163,7 @@ static void SetCallbacks(const FunctionCallbackInfo<Value>& args) {
     Local<Boolean> handled = Boolean::New(isolate, event == v8::kPromiseHandlerAddedAfterReject);
     Local<Value> args[] = { promise, value, handled };
 
-    Local<Function> handler = ivan::promise_reject_handler.Get(isolate);
+    Local<Function> handler = edge::promise_reject_handler.Get(isolate);
     USE(handler->Call(context, v8::Undefined(isolate), 3, args));
   });
 }
@@ -185,7 +185,7 @@ int main(int argc, char** argv) {
 
   V8::SetFlagsFromCommandLine(&v8_argc, const_cast<char**>(v8_argv), true);
 
-  ivan::IvanPlatform* platform = new ivan::IvanPlatform(4);
+  edge::EdgePlatform* platform = new edge::EdgePlatform(4);
   V8::InitializePlatform(platform);
   V8::Initialize();
 
@@ -198,8 +198,8 @@ int main(int argc, char** argv) {
 
   isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
 
-#define V(name) _ivan_register_##name()
-  IVAN_INTERNAL_MODULES(V)
+#define V(name) _edge_register_##name()
+  EDGE_INTERNAL_MODULES(V)
 #undef V
 
   {
@@ -209,23 +209,23 @@ int main(int argc, char** argv) {
     Local<Context> context = Context::New(isolate);
     Context::Scope context_scope(context);
 
-    context->SetEmbedderData(ivan::EmbedderKeys::kBindingCache, Object::New(isolate));
-    context->SetAlignedPointerInEmbedderData(ivan::EmbedderKeys::kInspector, nullptr);
+    context->SetEmbedderData(edge::EmbedderKeys::kBindingCache, Object::New(isolate));
+    context->SetAlignedPointerInEmbedderData(edge::EmbedderKeys::kInspector, nullptr);
 
     Local<Object> process = Object::New(isolate);
 
     Local<Array> pargv = Array::New(isolate, argc);
-    IVAN_SET_PROPERTY(context, process, "argv", pargv);
+    EDGE_SET_PROPERTY(context, process, "argv", pargv);
     for (int i = 0; i < argc; i++)
       USE(pargv->Set(context, i, String::NewFromUtf8(isolate, argv[i])));
 
     Local<Object> versions = Object::New(isolate);
 
-    IVAN_SET_PROPERTY(context, process, "versions", versions);
-    IVAN_SET_PROPERTY(context, versions, "v8", V8::GetVersion());
-    IVAN_SET_PROPERTY(context, versions, "uv", uv_version_string());
+    EDGE_SET_PROPERTY(context, process, "versions", versions);
+    EDGE_SET_PROPERTY(context, versions, "v8", V8::GetVersion());
+    EDGE_SET_PROPERTY(context, versions, "uv", uv_version_string());
 
-    IVAN_SET_PROPERTY(context, process, "exit", Exit);
+    EDGE_SET_PROPERTY(context, process, "exit", Exit);
 
     {
       char buf[PATH_MAX];
@@ -239,7 +239,7 @@ int main(int argc, char** argv) {
       Local<String> cwd = String::NewFromUtf8(
           isolate, buf, String::kNormalString, cwd_len);
 
-      IVAN_SET_PROPERTY(context, process, "cwd", cwd);
+      EDGE_SET_PROPERTY(context, process, "cwd", cwd);
     }
 
     int argc = 3;
@@ -251,13 +251,13 @@ int main(int argc, char** argv) {
 
     TryCatch try_catch(isolate);
 
-    MaybeLocal<Value> ivan_fn_maybe = ivan::ScriptWrap::Internal(
-        isolate, IVAN_STRING(isolate, "ivan"),
-        ivan::blobs::MainSource(isolate));
+    MaybeLocal<Value> edge_fn_maybe = edge::ScriptWrap::Internal(
+        isolate, EDGE_STRING(isolate, "edge"),
+        edge::blobs::MainSource(isolate));
 
-    Local<Value> ivan_fn;
-    if (ivan_fn_maybe.ToLocal(&ivan_fn))
-      USE(ivan_fn.As<Function>()->Call(context, context->Global(), argc, args));
+    Local<Value> edge_fn;
+    if (edge_fn_maybe.ToLocal(&edge_fn))
+      USE(edge_fn.As<Function>()->Call(context, context->Global(), argc, args));
 
     uv_loop_t* event_loop = uv_default_loop();
     int more = 1;
@@ -266,20 +266,20 @@ int main(int argc, char** argv) {
 
       platform->DrainTasks(isolate);
 
-      ivan::InternalCallbackScope::Run(isolate);
+      edge::InternalCallbackScope::Run(isolate);
 
       more = uv_loop_alive(event_loop);
     } while (more == 1);
 
-    if (!ivan::exit_handler.IsEmpty()) {
-      USE(ivan::exit_handler.Get(isolate)->Call(context, context->Global(), 0, {}));
+    if (!edge::exit_handler.IsEmpty()) {
+      USE(edge::exit_handler.Get(isolate)->Call(context, context->Global(), 0, {}));
     }
 
     if (try_catch.HasCaught())
-      ivan::errors::ReportException(isolate, &try_catch);
+      edge::errors::ReportException(isolate, &try_catch);
   }
 
-  ivan::id_to_script_map.clear();
+  edge::id_to_script_map.clear();
 
   platform->UnregisterIsolate(isolate);
   isolate->Dispose();

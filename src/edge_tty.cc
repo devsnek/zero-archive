@@ -1,10 +1,10 @@
 #include <uv.h>
 
 #include "v8.h"
-#include "ivan.h"
+#include "edge.h"
 #include "base_object-inl.h"
 
-namespace ivan {
+namespace edge {
 namespace tty {
 
 using v8::Context;
@@ -38,7 +38,7 @@ class TTYWrap : public BaseObject {
       uv_read_start(reinterpret_cast<uv_stream_t*>(&handle_), alloc_cb, ReadCallback);
       uv_tty_set_mode(&handle_, UV_TTY_MODE_RAW);
     }
-    IVAN_SET_PROPERTY(isolate->GetCurrentContext(), obj, "isTTY", uv_guess_handle(fd) == UV_TTY);
+    EDGE_SET_PROPERTY(isolate->GetCurrentContext(), obj, "isTTY", uv_guess_handle(fd) == UV_TTY);
   }
 
   ~TTYWrap() {
@@ -113,13 +113,13 @@ void Init(Local<Context> context, Local<Object> target) {
 
   Local<FunctionTemplate> tpl = BaseObject::MakeJSTemplate(isolate, "TTYWrap", TTYWrap::New);
 
-  IVAN_SET_PROTO_PROP(context, tpl, "write", TTYWrap::Write);
-  IVAN_SET_PROTO_PROP(context, tpl, "end", TTYWrap::End);
+  EDGE_SET_PROTO_PROP(context, tpl, "write", TTYWrap::Write);
+  EDGE_SET_PROTO_PROP(context, tpl, "end", TTYWrap::End);
 
-  target->Set(IVAN_STRING(isolate, "TTYWrap"), tpl->GetFunction());
+  target->Set(EDGE_STRING(isolate, "TTYWrap"), tpl->GetFunction());
 }
 
 }  // namespace tty
-}  // namespace ivan
+}  // namespace edge
 
-IVAN_REGISTER_INTERNAL(tty, ivan::tty::Init);
+EDGE_REGISTER_INTERNAL(tty, edge::tty::Init);

@@ -1,9 +1,9 @@
-#ifndef SRC_IVAN_ERRORS_H_
-#define SRC_IVAN_ERRORS_H_
+#ifndef SRC_EDGE_ERRORS_H_
+#define SRC_EDGE_ERRORS_H_
 
 #include "v8.h"
 
-namespace ivan {
+namespace edge {
 namespace errors {
 
 static void ReportException(v8::Isolate* isolate, v8::TryCatch* try_catch) {
@@ -66,6 +66,6 @@ static void ReportException(v8::Isolate* isolate, v8::TryCatch* try_catch) {
 }
 
 }  // namespace errors
-}  // namespace ivan
+}  // namespace edge
 
-#endif  // SRC_IVAN_ERRORS_H_
+#endif  // SRC_EDGE_ERRORS_H_

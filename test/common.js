@@ -1,5 +1,5 @@
 if (typeof binding !== 'function') {
-  throw new Error('configure ivan with --expose-binding');
+  throw new Error('configure edge with --expose-binding');
 }
 
 const knownGlobals = Object.getOwnPropertyNames(global);

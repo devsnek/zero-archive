@@ -16,7 +16,7 @@ const { error, log } = console;
 const RegExpEscape = (s) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 
 if (!require('../config').exposeBinding) {
-  error('ivan must be configured with --expose-binding to run tests');
+  error('edge must be configured with --expose-binding to run tests');
   process.exit(1);
 }
 
@@ -40,7 +40,7 @@ const readdirRecursive = (root, files = [], prefix = '') => {
 };
 
 const tests = readdirRecursive(path.resolve(process.cwd(), process.argv[2]));
-const ivan = path.resolve(__dirname, '..', 'out', 'ivan');
+const edge = path.resolve(__dirname, '..', 'out', 'edge');
 
 log(`-- Queued ${tests.length} tests --`);
 
@@ -64,7 +64,7 @@ tests.forEach(async (filename) => {
   const rel = path.relative(process.cwd(), filename);
   const isMessageTest = /\/test\/message\//.test(filename);
 
-  let { code, output } = await exec(ivan, [filename]);
+  let { code, output } = await exec(edge, [filename]);
 
   if (isMessageTest) {
     const patterns = (await readFile(filename.replace('.js', '.out'), 'utf8'))
@@ -93,7 +93,7 @@ tests.forEach(async (filename) => {
   if (code < 0) {
     error('FAIL', rel);
     error(output);
-    error('Command:', `${ivan} ${filename}`);
+    error('Command:', `${edge} ${filename}`);
 
     return;
   }

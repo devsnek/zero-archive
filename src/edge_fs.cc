@@ -2,7 +2,7 @@
 #include <string>
 
 #include "v8.h"
-#include "ivan.h"
+#include "edge.h"
 
 using v8::BigInt;
 using v8::Context;
@@ -16,12 +16,12 @@ using v8::Promise;
 using v8::String;
 using v8::Value;
 
-namespace ivan {
+namespace edge {
 namespace fs {
 
-class IvanReq {
+class edgeReq {
  public:
-  explicit IvanReq(Isolate* isolate,
+  explicit edgeReq(Isolate* isolate,
                    const char* type,
                    bool sync = false,
                    void* data = nullptr) :
@@ -30,7 +30,7 @@ class IvanReq {
     sync_(sync),
     data_(data) {}
 
-  ~IvanReq() {
+  ~edgeReq() {
     isolate_ = nullptr;
     resolver_.Reset();
   }
@@ -58,7 +58,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
   if (req->fs_type == UV_FS_ACCESS)
     return v8::Boolean::New(isolate, req->result >= 0);
 
-  IvanReq* data = reinterpret_cast<IvanReq*>(req->data);
+  edgeReq* data = reinterpret_cast<edgeReq*>(req->data);
   Local<Context> context = isolate->GetCurrentContext();
 
   switch (req->fs_type) {
@@ -91,7 +91,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       const uv_stat_t* s = &req->statbuf;
       Local<Object> table = Object::New(isolate);
 #define V(name) \
-      USE(table->Set(context, IVAN_STRING(isolate, #name), v8::Integer::New(isolate, s->st_##name)))
+      USE(table->Set(context, EDGE_STRING(isolate, #name), v8::Integer::New(isolate, s->st_##name)))
       V(dev);
       V(mode);
       V(nlink);
@@ -106,7 +106,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       V(gen);
 #undef V
 #define V(name) \
-      USE(table->Set(context, IVAN_STRING(isolate, #name), v8::Integer::New(isolate,              \
+      USE(table->Set(context, EDGE_STRING(isolate, #name), v8::Integer::New(isolate,              \
                      (int64_t) (s->st_##name.tv_sec * 1000000000) + s->st_##name.tv_nsec)));
       V(atim);
       V(mtim);
@@ -131,7 +131,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       else if (S_ISBLK(s->st_mode))
         type = "block";
       if (type)
-        USE(table->Set(context, IVAN_STRING(isolate, "type"), IVAN_STRING(isolate, type)));
+        USE(table->Set(context, EDGE_STRING(isolate, "type"), EDGE_STRING(isolate, type)));
 
       return table;
     }
@@ -154,7 +154,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       return v8::Integer::New(isolate, -1);
 
     default:
-      return v8::Exception::Error(IVAN_STRING(isolate, "UNKNOWN FS TYPE"));
+      return v8::Exception::Error(EDGE_STRING(isolate, "UNKNOWN FS TYPE"));
   }
 }
 
@@ -166,13 +166,13 @@ const char* makeErrMessage(const char* type, int result) {
 }
 
 void fs_cb(uv_fs_t* req) {
-  IvanReq* data = reinterpret_cast<IvanReq*>(req->data);
+  edgeReq* data = reinterpret_cast<edgeReq*>(req->data);
   Isolate* isolate = data->isolate();
   Local<Context> context = isolate->GetCurrentContext();
   InternalCallbackScope callback_scope(isolate);
   if (req->fs_type != UV_FS_ACCESS && req->result < 0) {
     Local<Value> e = v8::Exception::Error(
-        IVAN_STRING(isolate, makeErrMessage(data->type(), req->result)));
+        EDGE_STRING(isolate, makeErrMessage(data->type(), req->result)));
     USE(data->resolver()->Reject(context, e));
   } else {
     Local<Value> v = normalize_req(isolate, req);
@@ -186,11 +186,11 @@ void fs_cb(uv_fs_t* req) {
 }
 
 #define FS_CALL(args, func, req, ...) {                                       \
-  IvanReq* data = reinterpret_cast<IvanReq*>(req->data);                      \
+  edgeReq* data = reinterpret_cast<edgeReq*>(req->data);                      \
   int ret = uv_fs_##func(uv_default_loop(), req, __VA_ARGS__, data->sync() ? NULL : fs_cb); \
   Isolate* isolate = args.GetIsolate();                                       \
   if (req->fs_type != UV_FS_ACCESS && ret < 0) {                              \
-    IVAN_THROW_EXCEPTION(isolate, makeErrMessage(data->type(), req->result)); \
+    EDGE_THROW_EXCEPTION(isolate, makeErrMessage(data->type(), req->result)); \
     delete data;                                                              \
     delete req;                                                               \
   } else if (data->sync()) {                                                  \
@@ -209,7 +209,7 @@ void fs_cb(uv_fs_t* req) {
 }
 
 #define FS_INIT(...)                                                          \
-  IvanReq* data = new IvanReq(__VA_ARGS__);                                   \
+  edgeReq* data = new edgeReq(__VA_ARGS__);                                   \
   uv_fs_t* req = new uv_fs_t;                                                 \
   req->data = data;
 
@@ -254,12 +254,12 @@ static void Read(const FunctionCallbackInfo<Value>& args) {
 }
 
 void Init(Local<Context> context, Local<Object> exports) {
-  IVAN_SET_PROPERTY(context, exports, "open", Open);
-  IVAN_SET_PROPERTY(context, exports, "close", Close);
-  IVAN_SET_PROPERTY(context, exports, "fstat", FStat);
-  IVAN_SET_PROPERTY(context, exports, "read", Read);
+  EDGE_SET_PROPERTY(context, exports, "open", Open);
+  EDGE_SET_PROPERTY(context, exports, "close", Close);
+  EDGE_SET_PROPERTY(context, exports, "fstat", FStat);
+  EDGE_SET_PROPERTY(context, exports, "read", Read);
 
-#define V(n) IVAN_SET_PROPERTY(context, exports, #n, n);
+#define V(n) EDGE_SET_PROPERTY(context, exports, #n, n);
   V(O_RDONLY);
   V(O_WRONLY);
   V(O_RDWR);
@@ -274,6 +274,6 @@ void Init(Local<Context> context, Local<Object> exports) {
 }
 
 }  // namespace fs
-}  // namespace ivan
+}  // namespace edge
 
-IVAN_REGISTER_INTERNAL(fs, ivan::fs::Init);
+EDGE_REGISTER_INTERNAL(fs, edge::fs::Init);

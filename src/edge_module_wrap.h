@@ -1,11 +1,11 @@
-#ifndef SRC_IVAN_MODULE_WRAP_H_
-#define SRC_IVAN_MODULE_WRAP_H_
+#ifndef SRC_EDGE_MODULE_WRAP_H_
+#define SRC_EDGE_MODULE_WRAP_H_
 
 #include <string>
 #include <vector>
 #include "base_object-inl.h"
 
-namespace ivan {
+namespace edge {
 namespace loader {
 
 class ModuleWrap : public BaseObject {
@@ -64,6 +64,6 @@ class ModuleWrap : public BaseObject {
 };
 
 }  // namespace loader
-}  // namespace ivan
+}  // namespace edge
 
-#endif  // SRC_IVAN_MODULE_WRAP_H_
+#endif  // SRC_EDGE_MODULE_WRAP_H_

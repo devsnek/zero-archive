@@ -2,10 +2,10 @@
 #include <algorithm>
 
 #include "v8.h"
-#include "ivan.h"
-#include "ivan_platform.h"
+#include "edge.h"
+#include "edge_platform.h"
 
-namespace ivan {
+namespace edge {
 
 using v8::HandleScope;
 using v8::Isolate;
@@ -113,13 +113,13 @@ int PerIsolatePlatformData::unref() {
   return --ref_count_;
 }
 
-IvanPlatform::IvanPlatform(int thread_pool_size) {
+EdgePlatform::EdgePlatform(int thread_pool_size) {
   worker_thread_task_runner_ = std::make_shared<WorkerThreadsTaskRunner>(thread_pool_size);
   TracingController* controller = new TracingController();
   tracing_controller_.reset(controller);
 }
 
-void IvanPlatform::RegisterIsolate(Isolate* isolate, uv_loop_t* loop) {
+void EdgePlatform::RegisterIsolate(Isolate* isolate, uv_loop_t* loop) {
   Mutex::ScopedLock lock(per_isolate_mutex_);
   std::shared_ptr<PerIsolatePlatformData> existing = per_isolate_[isolate];
   if (existing) {
@@ -130,7 +130,7 @@ void IvanPlatform::RegisterIsolate(Isolate* isolate, uv_loop_t* loop) {
   }
 }
 
-void IvanPlatform::UnregisterIsolate(Isolate* isolate) {
+void EdgePlatform::UnregisterIsolate(Isolate* isolate) {
   Mutex::ScopedLock lock(per_isolate_mutex_);
   std::shared_ptr<PerIsolatePlatformData> existing = per_isolate_[isolate];
   CHECK(existing);
@@ -139,7 +139,7 @@ void IvanPlatform::UnregisterIsolate(Isolate* isolate) {
   }
 }
 
-void IvanPlatform::Shutdown() {
+void EdgePlatform::Shutdown() {
   worker_thread_task_runner_->Shutdown();
 
   {
@@ -148,7 +148,7 @@ void IvanPlatform::Shutdown() {
   }
 }
 
-int IvanPlatform::NumberOfWorkerThreads() {
+int EdgePlatform::NumberOfWorkerThreads() {
   return worker_thread_task_runner_->NumberOfWorkerThreads();
 }
 
@@ -179,7 +179,7 @@ void PerIsolatePlatformData::CancelPendingDelayedTasks() {
   scheduled_delayed_tasks_.clear();
 }
 
-void IvanPlatform::DrainTasks(Isolate* isolate) {
+void EdgePlatform::DrainTasks(Isolate* isolate) {
   std::shared_ptr<PerIsolatePlatformData> per_isolate = ForIsolate(isolate);
 
   do {
@@ -223,57 +223,57 @@ bool PerIsolatePlatformData::FlushForegroundTasksInternal() {
   return did_work;
 }
 
-void IvanPlatform::CallOnWorkerThread(std::unique_ptr<Task> task) {
+void EdgePlatform::CallOnWorkerThread(std::unique_ptr<Task> task) {
   worker_thread_task_runner_->PostTask(std::move(task));
 }
 
 std::shared_ptr<PerIsolatePlatformData>
-IvanPlatform::ForIsolate(Isolate* isolate) {
+EdgePlatform::ForIsolate(Isolate* isolate) {
   Mutex::ScopedLock lock(per_isolate_mutex_);
   std::shared_ptr<PerIsolatePlatformData> data = per_isolate_[isolate];
   CHECK(data);
   return data;
 }
 
-void IvanPlatform::CallOnForegroundThread(Isolate* isolate, Task* task) {
+void EdgePlatform::CallOnForegroundThread(Isolate* isolate, Task* task) {
   ForIsolate(isolate)->PostTask(std::unique_ptr<Task>(task));
 }
 
-void IvanPlatform::CallDelayedOnForegroundThread(
+void EdgePlatform::CallDelayedOnForegroundThread(
     Isolate* isolate, Task* task, double delay_in_seconds) {
   ForIsolate(isolate)->PostDelayedTask(std::unique_ptr<Task>(task), delay_in_seconds);
 }
 
-void IvanPlatform::CallDelayedOnWorkerThread(std::unique_ptr<Task> task,
+void EdgePlatform::CallDelayedOnWorkerThread(std::unique_ptr<Task> task,
                                              double delay_in_seconds) {
   printf("delayed task queued in %f\n", delay_in_seconds);
   // ForIsolate(Isolate::GetCurrent())->PostDelayedTask(
   //   std::move(task), delay_in_seconds);
 }
 
-bool IvanPlatform::FlushForegroundTasks(v8::Isolate* isolate) {
+bool EdgePlatform::FlushForegroundTasks(v8::Isolate* isolate) {
   return ForIsolate(isolate)->FlushForegroundTasksInternal();
 }
 
-void IvanPlatform::CancelPendingDelayedTasks(v8::Isolate* isolate) {
+void EdgePlatform::CancelPendingDelayedTasks(v8::Isolate* isolate) {
   ForIsolate(isolate)->CancelPendingDelayedTasks();
 }
 
 std::shared_ptr<v8::TaskRunner>
-IvanPlatform::GetForegroundTaskRunner(Isolate* isolate) {
+EdgePlatform::GetForegroundTaskRunner(Isolate* isolate) {
   return ForIsolate(isolate);
 }
 
-double IvanPlatform::MonotonicallyIncreasingTime() {
+double EdgePlatform::MonotonicallyIncreasingTime() {
   // Convert nanos to seconds.
   return uv_hrtime() / 1e9;
 }
 
-double IvanPlatform::CurrentClockTimeMillis() {
+double EdgePlatform::CurrentClockTimeMillis() {
   return SystemClockTimeMillis();
 }
 
-TracingController* IvanPlatform::GetTracingController() {
+TracingController* EdgePlatform::GetTracingController() {
   return tracing_controller_.get();
 }
 
@@ -346,4 +346,4 @@ std::queue<std::unique_ptr<T>> TaskQueue<T>::PopAll() {
   return result;
 }
 
-}  // namespace ivan
+}  // namespace edge

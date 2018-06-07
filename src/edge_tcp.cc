@@ -2,7 +2,7 @@
 #include <string>
 
 #include "v8.h"
-#include "ivan.h"
+#include "edge.h"
 
 using v8::ArrayBuffer;
 using v8::Context;
@@ -16,7 +16,7 @@ using v8::Persistent;
 using v8::String;
 using v8::Value;
 
-namespace ivan {
+namespace edge {
 namespace tcp {
 
 typedef struct {
@@ -32,19 +32,19 @@ typedef struct {
   Persistent<Function> on_read;
   Persistent<Function> on_finish;
   Persistent<Function> on_close;
-} ivan_tcp_t;
+} edge_tcp_t;
 
 #define HANDLE_UV(isolate, op) do {                                           \
   int ret = (op);                                                             \
   if (ret < 0) {                                                              \
-    IVAN_THROW_EXCEPTION((isolate), uv_err_name(ret));                        \
+    EDGE_THROW_EXCEPTION((isolate), uv_err_name(ret));                        \
     return;                                                                   \
   }                                                                           \
 } while (0)
 
 static void Init(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  ivan_tcp_t* that = new ivan_tcp_t;
+  edge_tcp_t* that = new edge_tcp_t;
 
   that->isolate = isolate;
   that->that.Reset(isolate, args[0].As<Object>());
@@ -56,11 +56,11 @@ static void Init(const FunctionCallbackInfo<Value>& args) {
 }
 
 static void on_uv_connection(uv_stream_t* handle, int) {
-  auto that = reinterpret_cast<ivan_tcp_t*>(handle->data);
+  auto that = reinterpret_cast<edge_tcp_t*>(handle->data);
   Isolate* isolate = that->isolate;
   Local<Context> context = isolate->GetCurrentContext();
 
-  ivan_tcp_t* client = new ivan_tcp_t;
+  edge_tcp_t* client = new edge_tcp_t;
   uv_accept(handle, reinterpret_cast<uv_stream_t*>(&client->handle));
 
   Local<Function> fn = that->on_connection.Get(isolate);
@@ -72,7 +72,7 @@ static void on_uv_connection(uv_stream_t* handle, int) {
 
 static void Listen(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  auto that = reinterpret_cast<ivan_tcp_t*>(args[0].As<External>()->Value());
+  auto that = reinterpret_cast<edge_tcp_t*>(args[0].As<External>()->Value());
 
   int port = args[1]->Int32Value();
   String::Utf8Value ip(isolate, args[2]);
@@ -91,7 +91,7 @@ static void Listen(const FunctionCallbackInfo<Value>& args) {
 }
 
 static void on_uv_connect(uv_connect_t* req, int status) {
-  auto that = reinterpret_cast<ivan_tcp_t*>(req->handle->data);
+  auto that = reinterpret_cast<edge_tcp_t*>(req->handle->data);
   Isolate* isolate = that->isolate;
   Local<Context> context = isolate->GetCurrentContext();
 
@@ -105,7 +105,7 @@ static void on_uv_connect(uv_connect_t* req, int status) {
 
 static void Connect(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  auto that = reinterpret_cast<ivan_tcp_t*>(args[0].As<External>()->Value());
+  auto that = reinterpret_cast<edge_tcp_t*>(args[0].As<External>()->Value());
 
   int port = args[1]->Int32Value();
   String::Utf8Value ip(isolate, args[2]);
@@ -124,12 +124,12 @@ static void Connect(const FunctionCallbackInfo<Value>& args) {
 }
 
 void Init(Local<Context> context, Local<Object> target) {
-  IVAN_SET_PROPERTY(context, target, "init", Init);
-  IVAN_SET_PROPERTY(context, target, "listen", Listen);
-  IVAN_SET_PROPERTY(context, target, "connect", Connect);
+  EDGE_SET_PROPERTY(context, target, "init", Init);
+  EDGE_SET_PROPERTY(context, target, "listen", Listen);
+  EDGE_SET_PROPERTY(context, target, "connect", Connect);
 }
 
 }  // namespace tcp
-}  // namespace ivan
+}  // namespace edge
 
-IVAN_REGISTER_INTERNAL(tcp, ivan::tcp::Init);
+EDGE_REGISTER_INTERNAL(tcp, edge::tcp::Init);
