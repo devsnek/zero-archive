@@ -21,7 +21,8 @@ hit me up with a pr or issue or tweet or whatever because i really need to start
 ##### Planned
 
 - WHATWG Streams (needed for fetch)
-- gotta figure out file api of some sort that could be web compat
+- File API
+- W3C WebSocket API
 
 
 ### Finished
