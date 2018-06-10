@@ -1,6 +1,5 @@
 deps/v8
 out
-ivan
 .ninja_deps
 .ninja_log
 *.dSYM

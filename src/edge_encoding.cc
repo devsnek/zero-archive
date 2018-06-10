@@ -34,6 +34,30 @@ using v8::Value;
 namespace edge {
 namespace encoding {
 
+enum Endianness {
+  kLittleEndian,
+  kBigEndian,
+};
+
+inline enum Endianness GetEndianness() {
+  // Constant-folded by the compiler.
+  const union {
+    uint8_t u8[2];
+    uint16_t u16;
+  } u = {
+    { 1, 0 }
+  };
+  return u.u16 == 1 ? kLittleEndian : kBigEndian;
+}
+
+inline bool IsLittleEndian() {
+  return GetEndianness() == kLittleEndian;
+}
+
+inline bool IsBigEndian() {
+  return GetEndianness() == kBigEndian;
+}
+
 static void EncodeUtf8String(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
@@ -134,17 +158,26 @@ class Decoder : public BaseObject {
       obj->bom_seen_ = true;
     }
 
-    UChar* target = Malloc<UChar>(limit);
+    UChar* result = Malloc<UChar>(limit);
+
+    UChar* target = result;
     ucnv_toUnicode(obj->conv_,
                    &target, target + (limit * sizeof(UChar)),
                    &source, source + source_length,
                    nullptr, flush, &status);
 
     if (U_SUCCESS(status)) {
-      char* out = Malloc(limit);
-      int32_t len = ucnv_fromUChars(obj->conv_, out, limit, target, limit, &status);
+      uint16_t* data = (uint16_t*) result;
+      if (IsBigEndian()) {
+        uint16_t temp;
+        for (size_t i = 0; i < limit; i += sizeof(temp)) {
+          memcpy(&temp, &data[i], sizeof(temp));
+          temp = ((temp) << 8) | ((temp) >> 8);
+          memcpy(&data[i], &temp, sizeof(temp));
+        }
+      }
       MaybeLocal<String> s =
-        String::NewFromUtf8(isolate, (const char*) out, v8::NewStringType::kNormal, len);
+        String::NewFromTwoByte(isolate, data, v8::NewStringType::kNormal, limit);
       args.GetReturnValue().Set(s.ToLocalChecked());
     } else {
       args.GetReturnValue().Set(status);
