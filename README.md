@@ -12,7 +12,6 @@ hit me up with a pr or issue or tweet or whatever because i really need to start
 
 ##### In Progress
 
-- W3C Web Performance Timing API (`performance.now()` works :D)
 - W3C Web Cryptography API
 - WHATWG Fetch (needed for http imports)
 
@@ -31,5 +30,6 @@ hit me up with a pr or issue or tweet or whatever because i really need to start
 - WHATWG Timers
 - WHATWG URL
 - WHATWG Encoding
+- W3C Web Performance Timing API
 
 [Web Platform Tests]: https://github.com/web-platform-tests/wpt
