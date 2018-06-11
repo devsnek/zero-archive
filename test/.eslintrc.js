@@ -33,5 +33,6 @@ module.exports = {
     setInterval: true,
     clearTimeout: true,
     clearInterval: true,
+    edge: false,
   },
 };

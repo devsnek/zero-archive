@@ -44,6 +44,7 @@ using v8::TryCatch;
   V(inspector_sync);             \
   V(types);                      \
   V(timer_wrap);                 \
+  V(ffi);
 
 
 #define V(name) void _edge_register_##name()

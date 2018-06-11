@@ -1,10 +1,10 @@
 CC = g++
-LIBS = $(shell pkg-config --libs --cflags icu-uc icu-io icu-i18n libuv)
 CFLAGS = -Wall -std=c++1z -stdlib=libc++
 CFILES = $(wildcard src/*.cc)
 HFILES = $(wildcard src/*.h)
 JSFILES = $(shell find lib -type f -name '*.js')
 V8FILES = $(shell echo deps/v8/out.gn/x64.release/obj/{libv8_monolith,third_party/icu/libicu{uc,i18n}}.a)
+LIBS = $(shell pkg-config --libs --cflags icu-uc icu-io icu-i18n libuv libffi)
 INCLUDES = -Ideps/v8/include
 
 out/edge: $(V8FILES) out/edge_blobs.cc $(CFILES) $(HFILES) | out
