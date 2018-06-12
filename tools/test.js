@@ -76,6 +76,8 @@ tests.forEach(async (filename) => {
 
     const outlines = output.split('\n');
 
+    code = 0;
+
     patterns.forEach((expected, index) => {
       const actual = outlines[index];
       if (expected.test(actual)) {
@@ -90,7 +92,7 @@ tests.forEach(async (filename) => {
     });
   }
 
-  if (code < 0) {
+  if (code !== 0) {
     error('FAIL', rel);
     error(output);
     error('Command:', `${edge} ${filename}`);

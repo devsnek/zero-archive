@@ -61,6 +61,17 @@ void ReadPointer(const FunctionCallbackInfo<Value>& args) {
   }
 }
 
+void ReadCString(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+
+  Local<Uint8Array> buf = args[0].As<Uint8Array>();
+  int32_t offset = args[1]->Int32Value();
+
+  char* ptr = ((char*) buf->Buffer()->GetContents().Data()) + offset;
+
+  args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, ptr));
+}
+
 // cif, nargs, rtype, atypes
 void PrepCif(const FunctionCallbackInfo<Value>& args) {
   auto cif = reinterpret_cast<ffi_cif*>(BufferData(args[0]));
@@ -86,6 +97,7 @@ void Init(Local<Context> context, Local<Object> target) {
 
   EDGE_SET_PROPERTY(context, target, "writePointer", WritePointer);
   EDGE_SET_PROPERTY(context, target, "readPointer", ReadPointer);
+  EDGE_SET_PROPERTY(context, target, "readCString", ReadCString);
   EDGE_SET_PROPERTY(context, target, "ffi_prep_cif", PrepCif);
   EDGE_SET_PROPERTY(context, target, "ffi_call", Call);
 
@@ -182,9 +194,10 @@ void Init(Local<Context> context, Local<Object> target) {
   V("int", int, ffi_type_sint)
   V("float", float, ffi_type_float)
   V("double", double, ffi_type_double)
-  V("pointer", char *, ffi_type_pointer)
   V("ulonglong", unsigned long long, ffi_type_ulong)
   V("longlong", long long, ffi_type_slong)
+  V("pointer", char*, ffi_type_pointer)
+  V("cstring", char*, ffi_type_pointer)
 #undef V
 }
 
