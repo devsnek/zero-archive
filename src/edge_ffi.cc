@@ -46,10 +46,32 @@ void WritePointer(const FunctionCallbackInfo<Value>& args) {
   }
 }
 
+// cif, nargs, rtype, atypes
+void PrepCif(const FunctionCallbackInfo<Value>& args) {
+  auto cif = reinterpret_cast<ffi_cif*>(BufferData(args[0]));
+  unsigned int nargs = args[1]->Uint32Value();
+  auto rtype = reinterpret_cast<ffi_type*>(BufferData(args[2]));
+  auto atypes = reinterpret_cast<ffi_type**>(BufferData(args[3]));
+
+  ffi_prep_cif(cif, FFI_DEFAULT_ABI, nargs, rtype, atypes);
+}
+
+// cif, fnptr, rvalue, avalue
+void Call(const FunctionCallbackInfo<Value>& args) {
+  auto cif = reinterpret_cast<ffi_cif*>(BufferData(args[0]));
+  auto fn = reinterpret_cast<void (*)(void)>(BufferData(args[1]));
+  auto rvalue = reinterpret_cast<void*>(BufferData(args[2]));
+  auto avalue = reinterpret_cast<void**>(BufferData(args[3]));
+
+  ffi_call(cif, fn, rvalue, avalue);
+}
+
 void Init(Local<Context> context, Local<Object> target) {
   Isolate* isolate = context->GetIsolate();
 
   EDGE_SET_PROPERTY(context, target, "writePointer", WritePointer);
+  EDGE_SET_PROPERTY(context, target, "ffi_prep_cif", PrepCif);
+  EDGE_SET_PROPERTY(context, target, "ffi_call", Call);
 
 #define V(fn) \
   EDGE_SET_PROPERTY(context, target, #fn, WrapPointer(isolate, reinterpret_cast<char*>(fn)));
