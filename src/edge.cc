@@ -227,6 +227,7 @@ int main(int argc, char** argv) {
     EDGE_SET_PROPERTY(context, versions, "uv", uv_version_string());
 
     EDGE_SET_PROPERTY(context, process, "exit", Exit);
+    EDGE_SET_PROPERTY(context, process, "isLittleEndian", edge::IsLittleEndian());
 
     {
       char buf[PATH_MAX];

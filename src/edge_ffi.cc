@@ -20,8 +20,8 @@ using v8::Value;
 namespace edge {
 namespace ffi {
 
-Local<Value> WrapPointer(Isolate* isolate, char* ptr) {
-  return Uint8Array::New(ArrayBuffer::New(isolate, ptr, 0), 0, 0);
+Local<Value> WrapPointer(Isolate* isolate, char* ptr, size_t size = 0) {
+  return Uint8Array::New(ArrayBuffer::New(isolate, ptr, size), 0, size);
 }
 
 char* BufferData(Local<Value> val) {
@@ -46,6 +46,21 @@ void WritePointer(const FunctionCallbackInfo<Value>& args) {
   }
 }
 
+void ReadPointer(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+
+  Local<Uint8Array> buf = args[0].As<Uint8Array>();
+  int32_t offset = args[1]->Int32Value();
+
+  char* ptr = ((char*) buf->Buffer()->GetContents().Data()) + offset;
+
+  if (ptr != NULL) {
+    size_t size = args[2]->Uint32Value();
+    char* val = *reinterpret_cast<char**>(ptr);
+    args.GetReturnValue().Set(WrapPointer(isolate, val, size));
+  }
+}
+
 // cif, nargs, rtype, atypes
 void PrepCif(const FunctionCallbackInfo<Value>& args) {
   auto cif = reinterpret_cast<ffi_cif*>(BufferData(args[0]));
@@ -66,16 +81,11 @@ void Call(const FunctionCallbackInfo<Value>& args) {
   ffi_call(cif, fn, rvalue, avalue);
 }
 
-int test(char* thing) {
-  printf("%s\n", thing);
-
-  return 5;
-}
-
 void Init(Local<Context> context, Local<Object> target) {
   Isolate* isolate = context->GetIsolate();
 
   EDGE_SET_PROPERTY(context, target, "writePointer", WritePointer);
+  EDGE_SET_PROPERTY(context, target, "readPointer", ReadPointer);
   EDGE_SET_PROPERTY(context, target, "ffi_prep_cif", PrepCif);
   EDGE_SET_PROPERTY(context, target, "ffi_call", Call);
 
@@ -86,7 +96,6 @@ void Init(Local<Context> context, Local<Object> target) {
   V(dlclose)
   V(dlsym)
   V(dlerror)
-  V(test)
 #undef V
 
 #define V(enum) EDGE_SET_PROPERTY(context, target, #enum, enum);
