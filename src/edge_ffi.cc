@@ -3,101 +3,66 @@
 #include "ffi.h"
 #include "v8.h"
 #include "edge.h"
+#include "base_object-inl.h"
 
 using v8::Array;
+using v8::ArrayBuffer;
+using v8::ArrayBufferView;
 using v8::Context;
 using v8::External;
 using v8::FunctionCallbackInfo;
 using v8::Isolate;
 using v8::Local;
 using v8::Object;
+using v8::Uint8Array;
 using v8::Value;
 
 namespace edge {
 namespace ffi {
 
-inline Local<Value> WrapPointer(Isolate* isolate, void* ptr) {
-  return External::New(isolate, ptr);
+Local<Value> WrapPointer(Isolate* isolate, char* ptr) {
+  return Uint8Array::New(ArrayBuffer::New(isolate, ptr, 0), 0, 0);
 }
 
-inline void* UnwrapPointer(Local<Value> external) {
-  return external.As<External>()->Value();
+char* BufferData(Local<Value> val) {
+  CHECK(val->IsArrayBufferView());
+  Local<ArrayBufferView> ui = val.As<ArrayBufferView>();
+  ArrayBuffer::Contents ab_c = ui->Buffer()->GetContents();
+  return static_cast<char*>(ab_c.Data()) + ui->ByteOffset();
 }
 
-// abi, argc, ret type, [arg types]
-void PrepCif(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  Local<Context> context = isolate->GetCurrentContext();
+void WritePointer(const FunctionCallbackInfo<Value>& args) {
+  Local<Uint8Array> buf = args[0].As<Uint8Array>();
+  Local<Value> input = args[1];
+  int32_t offset = args[2]->Int32Value();
 
-  auto abi = (ffi_abi) args[0]->Uint32Value();
-  uint32_t argc = args[1]->Uint32Value();
-  auto rtype = (ffi_type*) UnwrapPointer(args[2]);
+  char* ptr = ((char*) buf->Buffer()->GetContents().Data()) + offset;
 
-  ffi_type** atypes = nullptr;
-  {
-    Local<Array> a = args[3].As<Array>();
-    uint32_t len = a->Length();
-    for (uint32_t i = 0; i < len; i += 1) {
-      atypes[i] = (ffi_type*) UnwrapPointer(a->Get(context, i).ToLocalChecked());
-    }
+  if (input->IsNull()) {
+    *reinterpret_cast<char**>(ptr) = NULL;
+  } else {
+    char *input_ptr = BufferData(input);
+    *reinterpret_cast<char**>(ptr) = input_ptr;
   }
-
-  ffi_cif* cif = new ffi_cif;
-
-  ffi_status status = ffi_prep_cif(
-      cif,
-      abi,
-      argc,
-      rtype,
-      atypes);
-
-  args.GetReturnValue().Set(WrapPointer(isolate, cif));
-}
-
-// cif, fn, [args]
-void Call(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  Local<Context> context = isolate->GetCurrentContext();
-
-  auto cif = (ffi_cif*) UnwrapPointer(args[0]);
-  void* fn = UnwrapPointer(args[1]);
-  void** fnargs = nullptr;
-  {
-    Local<Array> a = args[3].As<Array>();
-    uint32_t len = a->Length();
-    for (uint32_t i = 0; i < len; i += 1) {
-      fnargs[i] = UnwrapPointer(a->Get(context, i).ToLocalChecked());
-    }
-  }
-
-  void* res = nullptr;
-#if __OBJC__ || __OBJC2__
-  @try {
-#endif
-
-  ffi_call(cif, FFI_FN(fn), res, fnargs);
-
-#if __OBJC__ || __OBJC2__
-  } @catch (id ex) {
-     // yeesh
-  }
-#endif
-
-  args.GetReturnValue().Set(WrapPointer(isolate, res));
 }
 
 void Init(Local<Context> context, Local<Object> target) {
   Isolate* isolate = context->GetIsolate();
 
-  EDGE_SET_PROPERTY(context, target, "prepCif", PrepCif);
-  EDGE_SET_PROPERTY(context, target, "call", Call);
+  EDGE_SET_PROPERTY(context, target, "writePointer", WritePointer);
 
-  EDGE_SET_PROPERTY(context, target, "dlopen", WrapPointer(isolate, (void*) dlopen));
-  EDGE_SET_PROPERTY(context, target, "dlclose", WrapPointer(isolate, (void*) dlclose));
-  EDGE_SET_PROPERTY(context, target, "dlsym", WrapPointer(isolate, (void*) dlsym));
-  EDGE_SET_PROPERTY(context, target, "dlerror", WrapPointer(isolate, (void*) dlerror));
+#define V(fn) \
+  EDGE_SET_PROPERTY(context, target, #fn, WrapPointer(isolate, reinterpret_cast<char*>(fn)));
+
+  V(dlopen)
+  V(dlclose)
+  V(dlsym)
+  V(dlerror)
+  V(puts);
+#undef V
 
 #define V(enum) EDGE_SET_PROPERTY(context, target, #enum, enum);
+
   V(FFI_OK)
   V(FFI_BAD_TYPEDEF)
   V(FFI_BAD_ABI)
@@ -148,7 +113,9 @@ void Init(Local<Context> context, Local<Object> target) {
 
   Local<Object> types = v8::Object::New(isolate);
   EDGE_SET_PROPERTY(context, target, "types", types);
-#define V(name, type) EDGE_SET_PROPERTY(context, types, name, WrapPointer(isolate, &type));
+#define V(name, type) \
+  EDGE_SET_PROPERTY(context, types, name, WrapPointer(isolate, (char*) &type));
+
   V("void", ffi_type_void)
   V("uint8", ffi_type_uint8)
   V("int8", ffi_type_sint8)
