@@ -33,8 +33,8 @@ char* BufferData(Local<Value> val) {
 
 void WritePointer(const FunctionCallbackInfo<Value>& args) {
   Local<Uint8Array> buf = args[0].As<Uint8Array>();
-  Local<Value> input = args[1];
-  int32_t offset = args[2]->Int32Value();
+  int32_t offset = args[1]->Int32Value();
+  Local<Value> input = args[2];
 
   char* ptr = ((char*) buf->Buffer()->GetContents().Data()) + offset;
 
@@ -66,6 +66,12 @@ void Call(const FunctionCallbackInfo<Value>& args) {
   ffi_call(cif, fn, rvalue, avalue);
 }
 
+int test(char* thing) {
+  printf("%s\n", thing);
+
+  return 5;
+}
+
 void Init(Local<Context> context, Local<Object> target) {
   Isolate* isolate = context->GetIsolate();
 
@@ -80,7 +86,7 @@ void Init(Local<Context> context, Local<Object> target) {
   V(dlclose)
   V(dlsym)
   V(dlerror)
-  V(puts);
+  V(test)
 #undef V
 
 #define V(enum) EDGE_SET_PROPERTY(context, target, #enum, enum);
@@ -133,31 +139,43 @@ void Init(Local<Context> context, Local<Object> target) {
 
 #undef V
 
-  Local<Object> types = v8::Object::New(isolate);
-  EDGE_SET_PROPERTY(context, target, "types", types);
-#define V(name, type) \
-  EDGE_SET_PROPERTY(context, types, name, WrapPointer(isolate, (char*) &type));
+  EDGE_SET_PROPERTY(context, target, "ffi_arg_size", sizeof(ffi_arg));
+  EDGE_SET_PROPERTY(context, target, "ffi_sarg_size", sizeof(ffi_sarg));
+  EDGE_SET_PROPERTY(context, target, "ffi_type_size", sizeof(ffi_type));
+  EDGE_SET_PROPERTY(context, target, "ffi_cif_size", sizeof(ffi_cif));
 
-  V("void", ffi_type_void)
-  V("uint8", ffi_type_uint8)
-  V("int8", ffi_type_sint8)
-  V("uint16", ffi_type_uint16)
-  V("int16", ffi_type_sint16)
-  V("uint32", ffi_type_uint32)
-  V("int32", ffi_type_sint32)
-  V("uint64", ffi_type_uint64)
-  V("int64", ffi_type_sint64)
-  V("uchar", ffi_type_uchar)
-  V("char", ffi_type_schar)
-  V("ushort", ffi_type_ushort)
-  V("short", ffi_type_sshort)
-  V("uint", ffi_type_uint)
-  V("int", ffi_type_sint)
-  V("float", ffi_type_float)
-  V("double", ffi_type_double)
-  V("pointer", ffi_type_pointer)
-  V("ulonglong", ffi_type_ulong)
-  V("longlong", ffi_type_slong)
+  Local<Object> types = v8::Object::New(isolate);
+  Local<Object> sizes = v8::Object::New(isolate);
+  EDGE_SET_PROPERTY(context, target, "types", types);
+  EDGE_SET_PROPERTY(context, target, "sizeof", sizes);
+
+  // void special case
+  EDGE_SET_PROPERTY(context, types, "void", WrapPointer(isolate, (char*) &ffi_type_void));
+  EDGE_SET_PROPERTY(context, sizes, "void", 0);
+
+#define V(name, type, ffi_type) \
+  EDGE_SET_PROPERTY(context, types, name, WrapPointer(isolate, (char*) &ffi_type)); \
+  EDGE_SET_PROPERTY(context, sizes, name, sizeof(type));
+
+  V("uint8", uint8_t, ffi_type_uint8)
+  V("int8", int8_t, ffi_type_sint8)
+  V("uint16", uint16_t, ffi_type_uint16)
+  V("int16", int16_t, ffi_type_sint16)
+  V("uint32", uint32_t, ffi_type_uint32)
+  V("int32", int32_t, ffi_type_sint32)
+  V("uint64", uint64_t, ffi_type_uint64)
+  V("int64", int64_t, ffi_type_sint64)
+  V("uchar", unsigned char, ffi_type_uchar)
+  V("char", char, ffi_type_schar)
+  V("ushort", unsigned short, ffi_type_ushort)
+  V("short", short, ffi_type_sshort)
+  V("uint", unsigned int, ffi_type_uint)
+  V("int", int, ffi_type_sint)
+  V("float", float, ffi_type_float)
+  V("double", double, ffi_type_double)
+  V("pointer", char *, ffi_type_pointer)
+  V("ulonglong", unsigned long long, ffi_type_ulong)
+  V("longlong", long long, ffi_type_slong)
 #undef V
 }
 
