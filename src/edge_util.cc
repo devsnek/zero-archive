@@ -59,28 +59,6 @@ static void EnqueueMicrotask(const FunctionCallbackInfo<Value>& info) {
   info.GetIsolate()->EnqueueMicrotask(info[0].As<Function>());
 }
 
-static void SetPromiseRejectionHandler(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-
-  promise_reject_handler.Set(isolate, args[0].As<Function>());
-
-  isolate->SetPromiseRejectCallback([](v8::PromiseRejectMessage message) {
-    Local<Promise> promise = message.GetPromise();
-    Isolate* isolate = promise->GetIsolate();
-    v8::PromiseRejectEvent event = message.GetEvent();
-    Local<Context> context = isolate->GetCurrentContext();
-
-    Local<Value> value = message.GetValue();
-    if (value.IsEmpty())
-      value = v8::Undefined(isolate);
-
-    Local<Boolean> handled = Boolean::New(isolate, event == v8::kPromiseHandlerAddedAfterReject);
-    Local<Value> args[] = { promise, value, handled };
-
-    USE(promise_reject_handler.Get(isolate)->Call(context, v8::Undefined(isolate), 3, args));
-  });
-}
-
 static void SafeToString(const FunctionCallbackInfo<Value>& args) {
   auto context = args.GetIsolate()->GetCurrentContext();
   args.GetReturnValue().Set(args[0]->ToDetailString(context).ToLocalChecked());
@@ -145,7 +123,6 @@ static void Init(Local<Context> context, Local<Object> target) {
   EDGE_SET_PROPERTY(context, target, "getProxyDetails", GetProxyDetails);
   EDGE_SET_PROPERTY(context, target, "runMicrotasks", RunMicrotasks);
   EDGE_SET_PROPERTY(context, target, "enqueueMicrotask", EnqueueMicrotask);
-  EDGE_SET_PROPERTY(context, target, "setPromiseRejectionHandler", SetPromiseRejectionHandler);
   EDGE_SET_PROPERTY(context, target, "safeToString", SafeToString);
   EDGE_SET_PROPERTY(context, target, "setV8Flags", SetV8Flags);
   EDGE_SET_PROPERTY(context, target, "createMessage", CreateMessage);

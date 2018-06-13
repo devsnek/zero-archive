@@ -22,11 +22,13 @@ using v8::FunctionCallbackInfo;
 using v8::FunctionTemplate;
 using v8::Local;
 using v8::MaybeLocal;
+using v8::Number;
 using v8::Isolate;
 using v8::Object;
 using v8::String;
 using v8::Value;
 using v8::V8;
+using v8::Persistent;
 using v8::Platform;
 using v8::Promise;
 using v8::TryCatch;
@@ -147,26 +149,7 @@ static void Exit(const FunctionCallbackInfo<Value>& args) {
 static void SetCallbacks(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
-  edge::promise_reject_handler.Set(isolate, args[0].As<Function>());
-  edge::next_tick_handler.Set(isolate, args[1].As<Function>());
-  edge::exit_handler.Set(isolate, args[2].As<Function>());
-
-  isolate->SetPromiseRejectCallback([](v8::PromiseRejectMessage message) {
-    Local<Promise> promise = message.GetPromise();
-    Isolate* isolate = promise->GetIsolate();
-    v8::PromiseRejectEvent event = message.GetEvent();
-    Local<Context> context = isolate->GetCurrentContext();
-
-    Local<Value> value = message.GetValue();
-    if (value.IsEmpty())
-      value = v8::Undefined(isolate);
-
-    Local<Boolean> handled = Boolean::New(isolate, event == v8::kPromiseHandlerAddedAfterReject);
-    Local<Value> args[] = { promise, value, handled };
-
-    Local<Function> handler = edge::promise_reject_handler.Get(isolate);
-    USE(handler->Call(context, v8::Undefined(isolate), 3, args));
-  });
+  edge::exit_handler.Set(isolate, args[0].As<Function>());
 }
 
 static const char* v8_argv[] = {

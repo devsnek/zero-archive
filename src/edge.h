@@ -257,8 +257,6 @@ enum EmbedderKeys {
   kInspector,
 };
 
-static v8::Eternal<v8::Function> promise_reject_handler;
-static v8::Eternal<v8::Function> next_tick_handler;
 static v8::Eternal<v8::Function> exit_handler;
 
 namespace loader {
@@ -277,9 +275,6 @@ class InternalCallbackScope {
 
   static void Run(v8::Isolate* isolate) {
     isolate->RunMicrotasks();
-    if (!next_tick_handler.IsEmpty()) {
-      next_tick_handler.Get(isolate)->Call(v8::Undefined(isolate), 0, nullptr);
-    }
   }
  private:
   v8::Isolate* isolate_;
