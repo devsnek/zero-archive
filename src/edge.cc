@@ -161,6 +161,8 @@ static const char* v8_argv[] = {
   "--harmony-regexp-named-expressions",
   "--harmony-do-expressions",
   "--allow-natives-syntax",
+  "--experimental-extras",
+  "--enable-experimental-builtins",
 };
 static int v8_argc = std::size(v8_argv);
 
