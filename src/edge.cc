@@ -157,8 +157,6 @@ static const char* v8_argv[] = {
   "--harmony-static-fields",
   "--harmony-private-fields",
   "--harmony-public-fields",
-  "--harmony-subsume-json",
-  "--harmony-regexp-named-expressions",
   "--harmony-do-expressions",
   "--allow-natives-syntax",
   "--experimental-extras",
