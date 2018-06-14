@@ -231,7 +231,6 @@ std::shared_ptr<PerIsolatePlatformData>
 EdgePlatform::ForIsolate(Isolate* isolate) {
   Mutex::ScopedLock lock(per_isolate_mutex_);
   std::shared_ptr<PerIsolatePlatformData> data = per_isolate_[isolate];
-  CHECK(data);
   return data;
 }
 
@@ -246,7 +245,7 @@ void EdgePlatform::CallDelayedOnForegroundThread(
 
 void EdgePlatform::CallDelayedOnWorkerThread(std::unique_ptr<Task> task,
                                              double delay_in_seconds) {
-  printf("delayed task queued in %f\n", delay_in_seconds);
+  fprintf(stderr, "delayed task queued in %f\n", delay_in_seconds);
   // ForIsolate(Isolate::GetCurrent())->PostDelayedTask(
   //   std::move(task), delay_in_seconds);
 }

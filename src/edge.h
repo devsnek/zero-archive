@@ -24,6 +24,7 @@
     if (UNLIKELY(!(expr))) {                                                  \
       fprintf(stderr, "%s:%s Assertion `%s' failed.\n",                       \
           __FILE__, STRINGIFY(__LINE__), #expr);                              \
+      abort();                                                                \
     }                                                                         \
   } while (0)
 

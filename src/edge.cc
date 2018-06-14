@@ -166,10 +166,24 @@ static const char* v8_argv[] = {
 };
 static int v8_argc = std::size(v8_argv);
 
-int main(int argc, char** argv) {
-  argv = uv_setup_args(argc, argv);
+int main(int process_argc, char** process_argv) {
+  process_argv = uv_setup_args(process_argc, process_argv);
 
-  V8::SetFlagsFromCommandLine(&v8_argc, const_cast<char**>(v8_argv), true);
+  char** argv = edge::Malloc<char*>(process_argc + v8_argc);
+  argv[0] = process_argv[0]; // grab argv0 which is the process
+  int argc = 1;
+
+  for (int i = 0; i < v8_argc; i += 1) {
+    argv[argc++] = (char*) v8_argv[i];
+  }
+  for (int i = 1; i < process_argc; i += 1) {
+    argv[argc++] = process_argv[i];
+  }
+  argv[argc++] = 0;
+
+  V8::SetFlagsFromCommandLine(&argc, const_cast<char**>(argv), true);
+  // argv and argc have been modified to include arguments
+  // not used by V8
 
   edge::EdgePlatform* platform = new edge::EdgePlatform(4);
   V8::InitializePlatform(platform);
