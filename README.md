@@ -6,20 +6,9 @@ browser spec globals.
 A lot of code in edge is inspired from other codebases. Those codebases will be
 linked at the top of the individual files.
 
-##### In Progress
+Check out the [0.0.1 Release Project][] for info on what needs to be done still.
 
-- W3C Web Cryptography API
-- WHATWG Fetch (needed for http imports)
-- FFI
-
-##### Planned
-
-- WHATWG Streams (needed for fetch)
-- File API
-- W3C WebSocket API
-
-
-### Finished
+### Finished APIs
 
 - WHATWG Console
 - WHATWG Events
@@ -72,3 +61,5 @@ The only difference between `pointer` and `cstring` is that `pointer` returns
 and takes a special `Pointer` type (that the user cannot construct), while
 `cstring` will take the pointer and produce a string from it. `cstring` is
 equivalent to `char*`
+
+[0.0.1 Release Project]: https://github.com/devsnek/edge/projects/1?fullscreen=true
