@@ -34,5 +34,6 @@ module.exports = {
     clearTimeout: true,
     clearInterval: true,
     edge: false,
+    binding: true,
   },
 };
