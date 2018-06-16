@@ -4,4 +4,3 @@ out
 .ninja_log
 *.dSYM
 *.dylib
-config.json

@@ -10,8 +10,8 @@ INCLUDES = -Ideps/v8/include
 out/edge: $(V8FILES) out/edge_blobs.cc $(CFILES) $(HFILES) | out
 	$(CC) $(CFILES) out/edge_blobs.cc $(V8FILES) $(CFLAGS) $(LIBS) $(INCLUDES) -o $@
 
-out/edge_blobs.cc: $(JSFILES) config.json | out
-	node tools/blob2c.js $@ $(JSFILES) config.json
+out/edge_blobs.cc: $(JSFILES) out/config.json | out
+	node tools/blob2c.js $@ $(JSFILES) out/config.json
 
 out:
 	mkdir -p out
@@ -19,7 +19,7 @@ out:
 $(V8FILES):
 	ninja -C deps/v8/out.gn/x64.release v8_monolith
 
-config.json: configure
+out/config.json: configure
 	$(error Missing or stale $@, please run ./configure)
 
 clean:
