@@ -15,7 +15,7 @@ const { error, log } = console;
 
 const RegExpEscape = (s) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 
-if (!require('../config').exposeBinding) {
+if (!require('../out/config').exposeBinding) {
   error('edge must be configured with --expose-binding to run tests');
   process.exit(1);
 }
@@ -26,7 +26,7 @@ const readdirRecursive = (root, files = [], prefix = '') => {
     return files;
   }
 
-  if (statSync(dir).isDirectory()) {
+  if (statSync(dir).isDirectory() && !dir.includes('/test/web-platform-tests')) {
     readdirSync(dir)
       .forEach((n) => readdirRecursive(root, files, path.join(prefix, n)));
   } else {

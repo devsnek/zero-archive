@@ -6,13 +6,6 @@ browser spec globals.
 A lot of code in edge is inspired from other codebases. Those codebases will be
 linked at the top of the individual files.
 
-My main priority right now is to figure out a stable way to port tests from
-the [Web Platform Tests][] to be runnable by edge's test system.
-There are thousands of these tests and the gross majority of them are wrapped
-in html. If you can think of a clever way to run them with no/minimal
-modification please please please hit me up with a pr or issue or tweet or
-whatever because i really need to start testing things.
-
 ##### In Progress
 
 - W3C Web Cryptography API
