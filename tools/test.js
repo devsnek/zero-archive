@@ -60,7 +60,7 @@ async function exec(command, args) {
   });
 }
 
-tests.forEach(async (filename) => {
+const testPromises = tests.map(async (filename) => {
   const rel = path.relative(process.cwd(), filename);
   const isMessageTest = /\/test\/message\//.test(filename);
 
@@ -101,4 +101,15 @@ tests.forEach(async (filename) => {
   }
 
   log('PASS', rel);
+});
+
+Promise.all(testPromises).then(() => {
+  const wpt = require('../test/wpt_list');
+
+  log(`\n-- [WPT] Queued ${wpt.length} tests --`);
+
+  return Promise.all(wpt.map(async (name) => {
+    const { output } = await exec(edge, ['./test/wpt.js', `./test/web-platform-tests/${name}`]);
+    console.log(output);
+  }));
 });
