@@ -20,7 +20,12 @@ $(V8FILES):
 	ninja -C deps/v8/out.gn/x64.release v8_monolith
 
 out/config.json: configure
-	$(error Missing or stale $@, please run ./configure)
+	@if [ -x out/config.status ]; then \
+		./out/config.status; \
+	else \
+		echo Missing or stale $@, please run ./$<; \
+		exit 1; \
+	fi
 
 clean:
 	rm -rf out

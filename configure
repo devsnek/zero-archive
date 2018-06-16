@@ -5,7 +5,7 @@
 /* eslint-env node */
 /* eslint-disable prefer-destructuring */
 
-const { readFileSync, writeFileSync } = require('fs');
+const { readFileSync, writeFileSync, chmodSync } = require('fs');
 
 function snekparse(args) {
   if (typeof args === 'string') {
@@ -82,13 +82,20 @@ function snekparse(args) {
   return argv;
 }
 
-const argv = snekparse(process.argv);
+const pargv = process.argv.slice(2);
+const argv = snekparse(pargv);
 
 const config = {
   exposeBinding: argv['expose-binding'] || false,
   allowNativesSyntax: argv['allow-natives-syntax'] || false,
   exposePrivateSymbols: argv['expose-private-symbols'] || false,
 };
+
+writeFileSync('./out/config.status', `#!/bin/sh
+set -ex
+./configure ${pargv.map((a) => `'${a.replace(/'/g, "'\\''")}'`).join(' ')}
+`);
+chmodSync('./out/config.status', '775');
 
 const current = (() => {
   try {
