@@ -271,7 +271,8 @@ int main(int process_argc, char** process_argv) {
     } while (more == 1);
 
     if (!edge::exit_handler.IsEmpty()) {
-      USE(edge::exit_handler.Get(isolate)->Call(context, context->Global(), 0, {}));
+      Local<Function> ecb = edge::exit_handler.Get(isolate);
+      USE(ecb->Call(context, context->Global(), 0, {}));
     }
 
     if (try_catch.HasCaught())
