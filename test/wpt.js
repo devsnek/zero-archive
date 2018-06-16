@@ -25,47 +25,63 @@ const fs = do {
 
 const ScriptWrap = binding('script_wrap');
 
-const reporter = {
-  pass: (message) => {
-    console.log(`√ ${message}`);
-  },
-  fail: (message) => {
-    console.error(`\u00D7 ${message}`);
-  },
-  reportStack: console.trace,
-};
-
 global.Worker = class {};
 global.SharedWorker = class {};
 
 global.fetch_tests_from_worker = () => {};
 
-(async () => {
+global.fetch = async (url) => {
+  const source = await fs.readFile(`./test/web-platform-tests${url}`);
+  return {
+    text: () => source,
+  };
+};
+
+new Promise(async (resolve, reject) => {
   const harness = await fs.readFile('./test/web-platform-tests/resources/testharness.js');
   ScriptWrap.run('testharness.js', harness);
 
+  const fail = reject;
+  const pass = resolve;
+
   global.add_result_callback((test) => {
     if (test.status === 1) {
-      reporter.fail(`${test.name}\n`);
-      reporter.reportStack(`${test.message}\n${test.stack}`);
+      fail({ test, reason: undefined });
     } else if (test.status === 2) {
-      reporter.fail(`${test.name} (timeout)\n`);
-      reporter.reportStack(`${test.message}\n${test.stack}`);
+      fail({ test, reason: 'timeout' });
     } else if (test.status === 3) {
-      reporter.fail(`${test.name} (incomplete)\n`);
-      reporter.reportStack(`${test.message}\n${test.stack}`);
+      fail({ test, reason: 'incomplete' });
     } else {
-      reporter.pass(test.name);
+      pass(test);
     }
   });
 
   global.add_completion_callback((tests, harnessStatus) => {
     if (harnessStatus.status === 2) {
-      reporter.fail('test harness should not timeout');
+      fail({
+        test: {
+          message: 'test harness should not timeout',
+        },
+        reason: 'timeout',
+      });
     }
   });
 
-  const target = edge.argv[0];
+  Error.prepareStackTrace = undefined;
+
+  const target = edge.argv[1];
   const source = await fs.readFile(target);
   ScriptWrap.run(target, source);
-})().then(reporter.pass, reporter.fail);
+})
+/* eslint-disable no-console */
+
+  .then((test) => {
+    console.log(`✓ ${test.name}`);
+  }, ({ test, reason = 'failure' }) => {
+    console.error(`\u00D7 ${test.name} (${reason})`.trim());
+    const e = new Error(test.message);
+    e.stack = test.stack;
+    console.error(e);
+  });
+
+/* eslint-enable no-console */
