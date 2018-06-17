@@ -143,7 +143,7 @@ class Decoder : public BaseObject {
                    nullptr, flush, &status);
 
     if (U_SUCCESS(status)) {
-      uint16_t* data = (uint16_t*) result;
+      uint16_t* data = reinterpret_cast<uint16_t*>(result);
       if (IsBigEndian()) {
         uint16_t temp;
         for (size_t i = 0; i < limit; i += sizeof(temp)) {

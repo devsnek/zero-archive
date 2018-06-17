@@ -86,7 +86,10 @@ class TTYWrap : public BaseObject {
     String::Utf8Value* utf8 = new String::Utf8Value(isolate, args[0]);
 
     uv_buf_t buf[] = {
-      { .base = (char*) **utf8, .len = static_cast<size_t>(utf8->length()) },
+      {
+        .base = reinterpret_cast<char*>(**utf8),
+        .len = static_cast<size_t>(utf8->length()),
+      },
     };
 
     uv_write_t* req = new uv_write_t;

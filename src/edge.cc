@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h> // PATH_MAX
+#include <limits.h>  // PATH_MAX
 #include <iterator>  // std::size
 
 #include "v8.h"
@@ -168,11 +168,11 @@ int main(int process_argc, char** process_argv) {
   process_argv = uv_setup_args(process_argc, process_argv);
 
   char** argv = edge::Malloc<char*>(process_argc + v8_argc);
-  argv[0] = process_argv[0]; // grab argv0 which is the process
+  argv[0] = process_argv[0];  // grab argv0 which is the process
   int argc = 1;
 
   for (int i = 0; i < v8_argc; i += 1) {
-    argv[argc++] = (char*) v8_argv[i];
+    argv[argc++] = const_cast<char*>(v8_argv[i]);
   }
   for (int i = 1; i < process_argc; i += 1) {
     argv[argc++] = process_argv[i];

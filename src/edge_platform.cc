@@ -25,7 +25,7 @@ static void WorkerThreadMain(void* data) {
   }
 }
 
-} // namespace
+}  // namespace
 
 WorkerThreadsTaskRunner::WorkerThreadsTaskRunner(int thread_pool_size) {
   for (int i = 0; i < thread_pool_size; i++) {

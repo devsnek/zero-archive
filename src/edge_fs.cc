@@ -26,7 +26,7 @@ class edgeReq {
                    bool sync = false,
                    void* data = nullptr) :
     isolate_(isolate),
-    type_((char*) type),
+    type_(const_cast<char*>(type)),
     sync_(sync),
     data_(data) {}
 

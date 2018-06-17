@@ -58,7 +58,15 @@ out/config.json: configure
 clean:
 	rm -rf out
 
-test: | out/edge
+lint-js:
+	eslint lib/ test/ --ignore-pattern="test/web-platform-tests"
+
+lint-cpp:
+	cpplint src/*.{cc,h}
+
+lint: | lint-js lint-cpp
+
+test: | lint out/edge
 	tools/test.js test
 
-.PHONY: clean test
+.PHONY: clean test lint-js lint-cpp

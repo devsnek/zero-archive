@@ -37,7 +37,7 @@ void WritePointer(const FunctionCallbackInfo<Value>& args) {
   int32_t offset = args[1]->Int32Value();
   Local<Value> input = args[2];
 
-  char* ptr = ((char*) buf->Buffer()->GetContents().Data()) + offset;
+  char* ptr = reinterpret_cast<char*>(buf->Buffer()->GetContents().Data()) + offset;
 
   if (input->IsNull()) {
     *reinterpret_cast<char**>(ptr) = NULL;
@@ -53,7 +53,7 @@ void ReadPointer(const FunctionCallbackInfo<Value>& args) {
   Local<Uint8Array> buf = args[0].As<Uint8Array>();
   int32_t offset = args[1]->Int32Value();
 
-  char* ptr = ((char*) buf->Buffer()->GetContents().Data()) + offset;
+  char* ptr = reinterpret_cast<char*>(buf->Buffer()->GetContents().Data()) + offset;
 
   if (ptr != NULL) {
     size_t size = args[2]->Uint32Value();
@@ -68,7 +68,7 @@ void ReadCString(const FunctionCallbackInfo<Value>& args) {
   Local<Uint8Array> buf = args[0].As<Uint8Array>();
   int32_t offset = args[1]->Int32Value();
 
-  char* ptr = ((char*) buf->Buffer()->GetContents().Data()) + offset;
+  char* ptr = reinterpret_cast<char*>(buf->Buffer()->GetContents().Data()) + offset;
 
   args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, ptr));
 }
@@ -194,11 +194,13 @@ void Init(Local<Context> context, Local<Object> target) {
   EDGE_SET_PROPERTY(context, target, "sizeof", sizes);
 
   // void special case
-  EDGE_SET_PROPERTY(context, types, "void", WrapPointer(isolate, (char*) &ffi_type_void));
+  EDGE_SET_PROPERTY(context, types, "void",
+      WrapPointer(isolate, reinterpret_cast<char*>(&ffi_type_void)));
   EDGE_SET_PROPERTY(context, sizes, "void", 0);
 
 #define V(name, type, ffi_type) \
-  EDGE_SET_PROPERTY(context, types, name, WrapPointer(isolate, (char*) &ffi_type)); \
+  EDGE_SET_PROPERTY(context, types, name, \
+      WrapPointer(isolate, reinterpret_cast<char*>(&ffi_type))); \
   EDGE_SET_PROPERTY(context, sizes, name, sizeof(type));
 
   V("uint8", uint8_t, ffi_type_uint8)
@@ -211,14 +213,14 @@ void Init(Local<Context> context, Local<Object> target) {
   V("int64", int64_t, ffi_type_sint64)
   V("uchar", unsigned char, ffi_type_uchar)
   V("char", char, ffi_type_schar)
-  V("ushort", unsigned short, ffi_type_ushort)
-  V("short", short, ffi_type_sshort)
+  V("ushort", unsigned short, ffi_type_ushort)  // NOLINT(runtime/int)
+  V("short", short, ffi_type_sshort)  // NOLINT(runtime/int)
   V("uint", unsigned int, ffi_type_uint)
   V("int", int, ffi_type_sint)
   V("float", float, ffi_type_float)
   V("double", double, ffi_type_double)
-  V("ulonglong", unsigned long long, ffi_type_ulong)
-  V("longlong", long long, ffi_type_slong)
+  V("ulonglong", unsigned long long, ffi_type_ulong)  // NOLINT(runtime/int)
+  V("longlong", long long, ffi_type_slong)  // NOLINT(runtime/int)
   V("pointer", char*, ffi_type_pointer)
   V("cstring", char*, ffi_type_pointer)
 #undef V
