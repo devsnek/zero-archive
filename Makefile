@@ -67,7 +67,7 @@ lint-cpp:
 
 lint: | lint-js lint-cpp
 
-_autoconf:
+_autoconf: | out
 	./configure --expose-binding
 
 test: | lint _autoconf out/edge
