@@ -1,5 +1,14 @@
 os: osx
+language: node_js
+node_js:
+  - "10"
+install: npm i -g eslint
+cache:
+  directories:
+    - deps
 jobs:
   include:
     - stage: test
       script: make test
+notifications:
+  email: false
