@@ -5,6 +5,7 @@ node_js:
 notifications:
     email: false
 cache:
+  timeout: 600000
   directories:
     - deps
 
