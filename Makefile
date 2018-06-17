@@ -18,6 +18,11 @@ out/edge: $(LIBS) $(CFLIES) $(HFILES) out/edge_blobs.cc | out
 	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) $(CFILES) out/edge_blobs.cc -o $@
 
 $(V8):
+	@if [ -f ./deps/v8 ]; then : else \
+		cd deps && gclient sync
+	fi
+	cd deps/v8 && tools/dev/v8gen.py x64.release -vv
+	cp tools/v8_args.gn deps/v8/out.gn/x64.release/args.gn
 	ninja -C deps/v8/out.gn/x64.release v8_monolith
 
 $(LIBUV):
