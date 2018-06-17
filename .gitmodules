@@ -4,3 +4,6 @@
 [submodule "deps/libuv"]
 	path = deps/libuv
 	url = https://github.com/libuv/libuv.git
+[submodule "deps/libffi"]
+	path = deps/libffi
+	url = https://github.com/libffi/libffi.git

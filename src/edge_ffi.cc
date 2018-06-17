@@ -132,7 +132,6 @@ void Init(Local<Context> context, Local<Object> target) {
 #elif defined(X86_WIN64)
   V(FFI_WIN64)
 #else
-  V(FFI_SYSV)
   V(FFI_UNIX64)
 #endif
 

@@ -8,11 +8,11 @@ JSFILES = $(shell find lib -type f -name '*.js')
 V8 = deps/v8/out.gn/x64.release/obj/libv8_monolith.a
 LIBUV = deps/libuv/out/Release/libuv.a
 ICU = $(shell pkg-config --libs --cflags icu-uc icu-io icu-i18n)
-LIBFFI = $(shell pkg-config --libs --cflags libffi)
+LIBFFI = deps/libffi/build_out/.libs/libffi.a
 
 LIBS = $(V8) $(LIBUV) $(ICU) $(LIBFFI)
 
-INCLUDES = -Ideps/v8/include -Ideps/libuv/include
+INCLUDES = -Ideps/v8/include -Ideps/libuv/include -Ideps/libffi/build_out/include
 
 out/edge: $(LIBS) $(CFLIES) $(HFILES) out/edge_blobs.cc | out
 	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) $(CFILES) out/edge_blobs.cc -o $@
@@ -28,7 +28,10 @@ $(ICU):
 	$(shell :)
 
 $(LIBFFI):
-	$(shell :)
+	cd deps/libffi && ./autogen.sh
+	# use build_out to match "build_*" in libffi's .gitignore
+	cd deps/libffi && ./configure --enable-static --enable-builddir=build_out
+	make -C deps/libffi
 
 $(CFILES): out/edge_blobs.cc
 
