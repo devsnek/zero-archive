@@ -108,7 +108,7 @@ const testPromises = tests.map(async (filename) => {
   log('PASS', rel);
 });
 
-Promise.all(testPromises).then(() => {
+const p = Promise.all(testPromises).then(() => {
   const wpt = require('../test/wpt_list');
 
   log(`\n-- [WPT] Queued ${wpt.length} tests --`);
@@ -123,6 +123,8 @@ Promise.all(testPromises).then(() => {
   }));
 });
 
-if (failed) {
-  process.exit(1);
-}
+p.then(() => {
+  if (failed) {
+    process.exit(1);
+  }
+});
