@@ -5,7 +5,7 @@ CFILES = $(wildcard src/*.cc)
 HFILES = $(wildcard src/*.h)
 JSFILES = $(shell find lib -type f -name '*.js')
 
-V8 = deps/v8/out.gn/x64.release/obj/libv8_monolith.a
+V8 = deps/v8/out.gn/release/obj/libv8_monolith.a
 LIBUV = deps/libuv/out/Release/libuv.a
 ICU = $(shell pkg-config --libs --cflags icu-uc icu-io icu-i18n)
 LIBFFI = deps/libffi/build_out/.libs/libffi.a
@@ -18,12 +18,16 @@ out/edge: $(LIBS) $(CFLIES) $(HFILES) out/edge_blobs.cc | out
 	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) $(ICU) $(CFILES) out/edge_blobs.cc -o $@
 
 $(V8):
-	@if [ -f ./deps/v8 ]; then : else \
-		cd deps && gclient sync
+	@if [ ! -d deps/v8 ]; then \
+		cd deps && gclient sync; \
 	fi
-	cd deps/v8 && tools/dev/v8gen.py x64.release -vv
-	cp tools/v8_args.gn deps/v8/out.gn/x64.release/args.gn
-	ninja -C deps/v8/out.gn/x64.release v8_monolith
+	@if [ ! -f deps/v8/out.gn/release/args.gn ]; then \
+		cd deps/v8; \
+		tools/dev/v8gen.py release -vv; \
+		cp ../../tools/v8_args.gn out.gn/release/args.gn; \
+		gn gen out.gn/release --check; \
+	fi
+	cd deps/v8 && ninja -C out.gn/release v8_monolith
 
 $(LIBUV):
 	cd deps/libuv && ./gyp_uv.py -f make -Duv_library=static_library
