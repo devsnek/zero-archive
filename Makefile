@@ -67,10 +67,7 @@ lint-cpp:
 
 lint: | lint-js lint-cpp
 
-_autoconf: | out
-	./configure --expose-binding
-
-test: | lint _autoconf out/edge
+test: | lint out/edge
 	tools/test.js test
 
-.PHONY: clean test lint-js lint-cpp _autoconf
+.PHONY: clean test lint-js lint-cpp
