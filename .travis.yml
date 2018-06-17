@@ -10,6 +10,7 @@ cache:
     - deps
 
 install:
+  - brew install icu4c && brew link icu4c --force
   - export PATH=$PATH:$PWD/tools/depot_tools
   - npm i -g eslint babel-eslint eslint-config-airbnb eslint-plugin-import eslint-plugin-react eslint-plugin-jsx-a11y
 
