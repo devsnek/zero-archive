@@ -2,7 +2,7 @@ os: osx
 language: node_js
 node_js:
   - "10"
-install: npm i -g eslint
+install: npm i -g eslint babel-eslint eslint-config-airbnb eslint-plugin-import eslint-plugin-react eslint-plugin-jsx-a11y
 cache:
   directories:
     - deps
