@@ -7,3 +7,6 @@
 [submodule "deps/libffi"]
 	path = deps/libffi
 	url = https://github.com/libffi/libffi.git
+[submodule "tools/depot_tools"]
+	path = tools/depot_tools
+	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git

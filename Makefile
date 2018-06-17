@@ -19,7 +19,7 @@ out/edge: $(LIBS) $(CFLIES) $(HFILES) out/edge_blobs.cc | out
 
 $(V8):
 	@if [ ! -d deps/v8 ]; then \
-		cd deps && gclient sync; \
+		cd deps && ../tools/depot_tools/gclient sync; \
 	fi
 	@if [ ! -f deps/v8/out.gn/release/args.gn ]; then \
 		cd deps/v8; \
