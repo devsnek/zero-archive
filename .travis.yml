@@ -2,13 +2,16 @@ os: osx
 language: node_js
 node_js:
   - "10"
-install: npm i -g eslint babel-eslint eslint-config-airbnb eslint-plugin-import eslint-plugin-react eslint-plugin-jsx-a11y
+notifications:
+    email: false
 cache:
   directories:
     - deps
-jobs:
-  include:
-    - stage: test
-      script: make test
-notifications:
-  email: false
+
+install:
+  - export PATH=$PATH:$PWD/tools/depot_tools
+  - npm i -g eslint babel-eslint eslint-config-airbnb eslint-plugin-import eslint-plugin-react eslint-plugin-jsx-a11y
+
+script:
+  - make test
+

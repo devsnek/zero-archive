@@ -18,10 +18,10 @@ out/edge: $(LIBS) $(CFLIES) $(HFILES) out/edge_blobs.cc | out
 	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) $(ICU) $(CFILES) out/edge_blobs.cc -o $@
 
 $(V8):
-	@if [ ! -d deps/v8 ]; then \
-		cd deps && ../tools/depot_tools/gclient sync; \
+	if [ ! -d deps/v8 ]; then \
+		cd deps && gclient sync; \
 	fi
-	@if [ ! -f deps/v8/out.gn/release/args.gn ]; then \
+	if [ ! -f deps/v8/out.gn/release/args.gn ]; then \
 		cd deps/v8; \
 		tools/dev/v8gen.py release -vv; \
 		cp ../../tools/v8_args.gn out.gn/release/args.gn; \
