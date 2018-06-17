@@ -21,13 +21,13 @@ $(V8):
 	if [ ! -d deps/v8 ]; then \
 		cd deps && gclient sync; \
 	fi
-	if [ ! -f deps/v8/out.gn/release/args.gn ]; then \
+	if [ ! -f deps/v8/out.gn/x64.release/args.gn ]; then \
 		cd deps/v8; \
-		tools/dev/v8gen.py release -vv; \
-		cp ../../tools/v8_args.gn out.gn/release/args.gn; \
-		gn gen out.gn/release --check; \
+		tools/dev/v8gen.py x64.release -vv; \
+		cp ../../tools/v8_args.gn ./out.gn/x64.release/args.gn; \
+		gn gen out.gn/x64.release --check; \
 	fi
-	cd deps/v8 && ninja -C out.gn/release v8_monolith
+	ninja -C deps/v8/out.gn/x64.release v8_monolith
 
 $(LIBUV):
 	cd deps/libuv && ./gyp_uv.py -f make -Duv_library=static_library
