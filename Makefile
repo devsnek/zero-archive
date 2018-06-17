@@ -5,7 +5,7 @@ CFILES = $(wildcard src/*.cc)
 HFILES = $(wildcard src/*.h)
 JSFILES = $(shell find lib -type f -name '*.js')
 
-V8 = deps/v8/out.gn/release/obj/libv8_monolith.a
+V8 = deps/v8/out.gn/x64.release/obj/libv8_monolith.a
 LIBUV = deps/libuv/out/Release/libuv.a
 ICU = $(shell pkg-config --libs --cflags icu-uc icu-io icu-i18n)
 LIBFFI = deps/libffi/build_out/.libs/libffi.a
@@ -30,6 +30,7 @@ $(V8):
 	ninja -C deps/v8/out.gn/x64.release v8_monolith
 
 $(LIBUV):
+	git clone https://chromium.googlesource.com/external/gyp deps/libuv/build/gyp
 	cd deps/libuv && ./gyp_uv.py -f make -Duv_library=static_library
 	BUILDTYPE=Release make -C deps/libuv/out libuv
 
