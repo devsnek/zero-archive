@@ -11,17 +11,12 @@ const {
 const path = require('path');
 const { spawn } = require('child_process');
 
-let failed = false;
-const { error: _error, log } = console;
-const error = (...args) => {
-  failed = true;
-  _error(...args);
-};
-
 const RegExpEscape = (s) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 
+const { log, warn } = console;
+
 if (!require('../out/config').exposeBinding) {
-  error('edge must be configured with --expose-binding to run tests');
+  warn('edge must be configured with --expose-binding to run tests');
   process.exit(1);
 }
 
@@ -44,11 +39,6 @@ const readdirRecursive = (root, files = [], prefix = '') => {
   return files;
 };
 
-const tests = readdirRecursive(path.resolve(process.cwd(), process.argv[2]));
-const edge = path.resolve(__dirname, '..', 'out', 'edge');
-
-log(`-- Queued ${tests.length} tests --`);
-
 async function exec(command, args) {
   return new Promise((resolve) => {
     const child = spawn(command, args);
@@ -65,50 +55,57 @@ async function exec(command, args) {
   });
 }
 
-const testPromises = tests.map(async (filename) => {
-  const rel = path.relative(process.cwd(), filename);
-  const isMessageTest = /\/test\/message\//.test(filename);
+const edge = path.resolve(__dirname, '..', 'out', 'edge');
 
-  let { code, output } = await exec(edge, [filename]);
+const runEdgeTests = () => {
+  const tests = readdirRecursive(path.resolve(process.cwd(), process.argv[2]));
+  log(`-- Queued ${tests.length} tests --`);
 
-  if (isMessageTest) {
-    const patterns = (await readFile(filename.replace('.js', '.out'), 'utf8'))
-      .split('\n')
-      .map((line) => {
-        const pattern = RegExpEscape(line.trimRight()).replace(/\\\*/g, '.*');
-        return new RegExp(`^${pattern}$`);
+  return Promise.all(tests.map(async (filename) => {
+    const rel = path.relative(process.cwd(), filename);
+    const isMessageTest = /\/test\/message\//.test(filename);
+
+    let { code, output } = await exec(edge, [filename]);
+
+    if (isMessageTest) {
+      const patterns = (await readFile(filename.replace('.js', '.out'), 'utf8'))
+        .split('\n')
+        .map((line) => {
+          const pattern = RegExpEscape(line.trimRight()).replace(/\\\*/g, '.*');
+          return new RegExp(`^${pattern}$`);
+        });
+
+      const outlines = output.split('\n');
+
+      code = 0;
+
+      patterns.forEach((expected, index) => {
+        const actual = outlines[index];
+        if (expected.test(actual)) {
+          return;
+        }
+
+        warn('match failed');
+        warn(`line=${index + 1}`);
+        warn(`expect=${expected}`);
+        warn(`actual=${actual}`);
+        code = -1;
       });
+    }
 
-    const outlines = output.split('\n');
+    if (code !== 0) {
+      warn('FAIL', rel);
+      warn(output);
+      warn('Command:', `${edge} ${filename}`);
 
-    code = 0;
+      throw new Error('failed');
+    }
 
-    patterns.forEach((expected, index) => {
-      const actual = outlines[index];
-      if (expected.test(actual)) {
-        return;
-      }
+    log('PASS', rel);
+  }));
+};
 
-      error('match failed');
-      error(`line=${index + 1}`);
-      error(`expect=${expected}`);
-      error(`actual=${actual}`);
-      code = -1;
-    });
-  }
-
-  if (code !== 0) {
-    error('FAIL', rel);
-    error(output);
-    error('Command:', `${edge} ${filename}`);
-
-    return;
-  }
-
-  log('PASS', rel);
-});
-
-const p = Promise.all(testPromises).then(() => {
+const runWPT = () => {
   const wpt = require('../test/wpt_list');
 
   log(`\n-- [WPT] Queued ${wpt.length} tests --`);
@@ -116,15 +113,29 @@ const p = Promise.all(testPromises).then(() => {
   return Promise.all(wpt.map(async (name) => {
     const { output } = await exec(edge, ['./test/wpt.js', `./test/web-platform-tests/${name}`]);
     if (/\u00D7/.test(output)) {
-      error(output);
+      warn(output);
+      throw new Error('failed');
     } else {
       log(output);
     }
   }));
-});
+};
 
-p.then(() => {
+(async () => {
+  let failed = false;
+
+  try {
+    await runEdgeTests();
+  } catch {
+    failed = true;
+  }
+  try {
+    await runWPT();
+  } catch {
+    failed = true;
+  }
+
   if (failed) {
     process.exit(1);
   }
-});
+})();
