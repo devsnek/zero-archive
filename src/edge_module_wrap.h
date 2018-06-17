@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>  // std::unordered_map
 #include "base_object-inl.h"
 
 namespace edge {

@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 #include <functional>
+#include <memory>  // std::shared_ptr<>
 
 #include "v8.h"
 #include "libplatform/libplatform.h"

@@ -10,3 +10,6 @@
 [submodule "tools/depot_tools"]
 	path = tools/depot_tools
 	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
+[submodule "tools/cpplint"]
+	path = tools/cpplint
+	url = https://github.com/cpplint/cpplint

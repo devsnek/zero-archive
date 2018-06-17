@@ -1,5 +1,6 @@
 #include <uv.h>
 #include <algorithm>
+#include <utility>  // std::move
 
 #include "v8.h"
 #include "edge.h"

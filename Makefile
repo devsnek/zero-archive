@@ -62,7 +62,7 @@ lint-js:
 	eslint lib/ test/ --ignore-pattern="test/web-platform-tests"
 
 lint-cpp:
-	cpplint src/*.{cc,h}
+	tools/cpplint/cpplint.py src/*.{cc,h}
 
 lint: | lint-js lint-cpp
 
