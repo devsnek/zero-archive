@@ -10,12 +10,12 @@ LIBUV = deps/libuv/out/Release/libuv.a
 ICU = $(shell pkg-config --libs --cflags icu-uc icu-io icu-i18n)
 LIBFFI = deps/libffi/build_out/.libs/libffi.a
 
-LIBS = $(V8) $(LIBUV) $(ICU) $(LIBFFI)
+LIBS = $(V8) $(LIBUV) $(LIBFFI)
 
 INCLUDES = -Ideps/v8/include -Ideps/libuv/include -Ideps/libffi/build_out/include
 
 out/edge: $(LIBS) $(CFLIES) $(HFILES) out/edge_blobs.cc | out
-	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) $(CFILES) out/edge_blobs.cc -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) $(ICU) $(CFILES) out/edge_blobs.cc -o $@
 
 $(V8):
 	@if [ -f ./deps/v8 ]; then : else \
@@ -28,9 +28,6 @@ $(V8):
 $(LIBUV):
 	cd deps/libuv && ./gyp_uv.py -f make -Duv_library=static_library
 	BUILDTYPE=Release make -C deps/libuv/out libuv
-
-$(ICU):
-	$(shell :)
 
 $(LIBFFI):
 	cd deps/libffi && ./autogen.sh
@@ -57,4 +54,7 @@ out/config.json: configure
 clean:
 	rm -rf out
 
-.PHONY: clean
+test: | out/edge
+	tools/test.js test
+
+.PHONY: clean test

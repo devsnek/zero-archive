@@ -14,6 +14,7 @@ using v8::FunctionCallbackInfo;
 using v8::Isolate;
 using v8::Local;
 using v8::Object;
+using v8::String;
 using v8::Uint8Array;
 using v8::Value;
 
@@ -92,6 +93,37 @@ void Call(const FunctionCallbackInfo<Value>& args) {
   ffi_call(cif, fn, rvalue, avalue);
 }
 
+void Dlopen(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  Local<Context> context = isolate->GetCurrentContext();
+
+  void* handle;
+  if (args[0]->IsString()) {
+    String::Utf8Value filename(isolate, args[0]);
+    handle = dlopen(*filename, RTLD_LAZY);
+  } else {
+    handle = dlopen(nullptr, RTLD_LAZY);
+  }
+
+  if (handle) {
+    Local<Array> functions = args[1].As<Array>();
+    uint32_t len = functions->Length();
+    Local<Array> pointers = Array::New(isolate, len);
+    for (uint32_t i = 0; i < len; i += 1) {
+      String::Utf8Value name(isolate, functions->Get(context, i).ToLocalChecked());
+      char* ptr = reinterpret_cast<char*>(dlsym(handle, *name));
+      if (!ptr) {
+        args.GetReturnValue().Set(EDGE_STRING(isolate, dlerror()));
+        break;
+      }
+      pointers->Set(context, i, WrapPointer(isolate, ptr)).ToChecked();
+    }
+    args.GetReturnValue().Set(pointers);
+  } else {
+    args.GetReturnValue().Set(EDGE_STRING(isolate, dlerror()));
+  }
+}
+
 void Init(Local<Context> context, Local<Object> target) {
   Isolate* isolate = context->GetIsolate();
 
@@ -100,15 +132,7 @@ void Init(Local<Context> context, Local<Object> target) {
   EDGE_SET_PROPERTY(context, target, "readCString", ReadCString);
   EDGE_SET_PROPERTY(context, target, "ffi_prep_cif", PrepCif);
   EDGE_SET_PROPERTY(context, target, "ffi_call", Call);
-
-#define V(fn) \
-  EDGE_SET_PROPERTY(context, target, #fn, WrapPointer(isolate, reinterpret_cast<char*>(fn)));
-
-  V(dlopen)
-  V(dlclose)
-  V(dlsym)
-  V(dlerror)
-#undef V
+  EDGE_SET_PROPERTY(context, target, "dlopen", Dlopen);
 
 #define V(enum) EDGE_SET_PROPERTY(context, target, #enum, enum);
 

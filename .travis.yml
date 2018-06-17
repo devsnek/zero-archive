@@ -1,0 +1,5 @@
+os: osx
+jobs:
+  include:
+    - stage: test
+      script: make test

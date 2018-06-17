@@ -20,6 +20,7 @@ module.exports = {
     global: false,
     console: false,
     performance: false,
+    URL: false,
     EventTarget: false,
     Event: false,
     CustomEvent: false,
@@ -33,7 +34,8 @@ module.exports = {
     setInterval: true,
     clearTimeout: true,
     clearInterval: true,
-    edge: false,
+    DynamicLibrary: false,
+    environment: false,
     binding: true,
   },
 };

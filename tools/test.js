@@ -11,7 +11,12 @@ const {
 const path = require('path');
 const { spawn } = require('child_process');
 
-const { error, log } = console;
+let failed = false;
+const { error: _error, log } = console;
+const error = (...args) => {
+  failed = true;
+  _error(...args);
+};
 
 const RegExpEscape = (s) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 
@@ -110,6 +115,14 @@ Promise.all(testPromises).then(() => {
 
   return Promise.all(wpt.map(async (name) => {
     const { output } = await exec(edge, ['./test/wpt.js', `./test/web-platform-tests/${name}`]);
-    console.log(output);
+    if (/\u00D7/.test(output)) {
+      error(output);
+    } else {
+      log(output);
+    }
   }));
 });
+
+if (failed) {
+  process.exit(1);
+}

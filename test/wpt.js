@@ -70,7 +70,7 @@ new Promise((resolve, reject) => {
 
     Error.prepareStackTrace = undefined;
 
-    const target = edge.argv[1];
+    const target = environment.argv[1];
     const source = await fs.readFile(target);
 
     // assign global.self late to trick wpt into

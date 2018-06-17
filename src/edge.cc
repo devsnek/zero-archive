@@ -179,6 +179,8 @@ int main(int process_argc, char** process_argv) {
   }
   argv[argc++] = 0;
 
+  v8::V8::InitializeICU();
+
   V8::SetFlagsFromCommandLine(&argc, const_cast<char**>(argv), true);
   // argv and argc have been modified to include arguments
   // not used by V8
