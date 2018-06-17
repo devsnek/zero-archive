@@ -18,16 +18,7 @@ out/edge: $(LIBS) $(CFLIES) $(HFILES) out/edge_blobs.cc | out
 	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) $(ICU) $(CFILES) out/edge_blobs.cc -o $@
 
 $(V8):
-	if [ ! -d deps/v8 ]; then \
-		cd deps && gclient sync; \
-	fi
-	if [ ! -f deps/v8/out.gn/x64.release/args.gn ]; then \
-		cd deps/v8; \
-		tools/dev/v8gen.py x64.release -vv; \
-		cp ../../tools/v8_args.gn ./out.gn/x64.release/args.gn; \
-		gn gen out.gn/x64.release --check; \
-	fi
-	ninja -C deps/v8/out.gn/x64.release v8_monolith
+	tools/build-v8.sh
 
 $(LIBUV):
 	git clone https://chromium.googlesource.com/external/gyp deps/libuv/build/gyp
