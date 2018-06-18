@@ -2,17 +2,19 @@
 
 set -ex
 
-export PATH=$PATH:"$(pwd)/tools/depot_tools"
+PATH=$PATH:"$(pwd)/tools/depot_tools"
+export PATH
+
+V8_ARCH=$1
 
 if [ ! -d deps/v8 ]; then
   cd deps && gclient sync
 fi
 
-if [ ! -f deps/v8/out.gn/x64.release/args.gn ]; then
+if [ ! -f "deps/v8/out.gn/$V8_ARCH.release/args.gn" ]; then
   cd deps/v8
-  tools/dev/v8gen.py x64.release -vv
-  cp ../../tools/v8_args.gn ./out.gn/x64.release/args.gn
-  gn gen out.gn/x64.release --check
+  tools/dev/v8gen.py "$V8_ARCH.release" --no-goma -vv -- "is_debug=false is_component_build=false v8_monolithic=true v8_untrusted_code_mitigations=false v8_use_external_startup_data=false"
+  gn gen "out.gn/$V8_ARCH.release" --check
 fi
 
-ninja -C deps/v8/out.gn/x64.release v8_monolith
+ninja -C "deps/v8/out.gn/$V8_ARCH.release" v8_monolith
