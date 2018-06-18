@@ -5,7 +5,9 @@
 /* eslint-env node */
 /* eslint-disable prefer-destructuring */
 
-const { readFileSync, writeFileSync, chmodSync } = require('fs');
+const {
+  readFileSync, writeFileSync, chmodSync, existsSync, mkdirSync,
+} = require('fs');
 
 function snekparse(args) {
   if (typeof args === 'string') {
@@ -90,6 +92,10 @@ const config = {
   allowNativesSyntax: argv['allow-natives-syntax'] || false,
   exposePrivateSymbols: argv['expose-private-symbols'] || false,
 };
+
+if (!existsSync('./out')) {
+  mkdirSync('./out');
+}
 
 writeFileSync('./out/config.status', `#!/bin/sh
 set -ex
