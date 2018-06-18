@@ -1,6 +1,8 @@
 import { assertEqual } from '../common.js';
 
-const lib = new DynamicLibrary(new URL('./libfibonacci.dylib', import.meta.url), {
+// build-shared ./fibonacci.c
+
+const lib = new DynamicLibrary(new URL('./libfibonacci.shared', import.meta.url), {
   fibonacci: ['uint64', ['int']],
 });
 

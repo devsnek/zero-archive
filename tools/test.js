@@ -65,6 +65,23 @@ const runEdgeTests = () => {
     const rel = path.relative(process.cwd(), filename);
     const isMessageTest = /\/test\/message\//.test(filename);
 
+    const source = await readFile(filename, 'utf8');
+    {
+      const match = /^\/\/ build-shared (.+?)$/m.exec(source);
+      if (match) {
+        const dir = path.dirname(filename);
+        const cxxfile = path.resolve(dir, match[1]);
+        const sfile = path.resolve(dir, `lib${path.basename(match[1]).split('.')[0]}.shared`);
+        const { code, output } = await exec('gcc', [
+          '-dynamiclib', '-undefined', 'suppress', '-flat_namespace', cxxfile, '-o', sfile,
+        ]);
+        if (code !== 0) {
+          warn(output);
+          throw new Error(`building ${cxxfile} failed`);
+        }
+      }
+    }
+
     let { code, output } = await exec(edge, [filename]);
 
     if (isMessageTest) {

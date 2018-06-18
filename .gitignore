@@ -4,3 +4,4 @@ out
 .ninja_log
 *.dSYM
 *.dylib
+*.shared
