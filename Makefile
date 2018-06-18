@@ -1,4 +1,4 @@
-CC = g++
+CC = clang++
 CFLAGS = -Wall -std=c++1z -stdlib=libc++
 
 UNAME_M=$(shell uname -m)
