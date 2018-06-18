@@ -1,4 +1,4 @@
-CC = clang++
+CC = g++
 CFLAGS = -Wall -std=c++1z -stdlib=libc++
 
 UNAME_M=$(shell uname -m)
@@ -65,7 +65,6 @@ endif
 endif
 endif
 
-# node and v8 use different arch names (e.g. node 'x86' vs v8 'ia32').
 # pass the proper v8 arch name to $V8_ARCH based on user-specified $DESTCPU.
 ifeq ($(DESTCPU),x86)
 V8_ARCH=ia32
