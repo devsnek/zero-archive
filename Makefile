@@ -14,6 +14,8 @@ LIBS = $(V8) $(LIBUV) $(LIBFFI)
 
 INCLUDES = -Ideps/v8/include -Ideps/libuv/include -Ideps/libffi/build_out/include
 
+PATH := $(PWD)/tools/depot_tools:$(PATH)
+
 out/edge: $(LIBS) $(CFLIES) $(HFILES) out/edge_blobs.cc | out
 	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) $(ICU) $(CFILES) out/edge_blobs.cc -o $@
 
