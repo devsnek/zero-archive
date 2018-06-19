@@ -95,8 +95,8 @@ LIBS = $(V8) $(LIBUV) $(LIBFFI)
 
 INCLUDES = -Ideps/v8/include -Ideps/libuv/include -Ideps/libffi/build_out/include
 
-out/edge: $(LIBS) $(CFLIES) $(HFILES) out/edge_blobs.cc | out
-	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) $(ICU) $(CFILES) out/edge_blobs.cc -o $@
+out/zero: $(LIBS) $(CFLIES) $(HFILES) out/zero_blobs.cc | out
+	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) $(ICU) $(CFILES) out/zero_blobs.cc -o $@
 
 $(V8):
 	tools/build-v8.sh $(V8_ARCH)
@@ -112,9 +112,9 @@ $(LIBFFI):
 	cd deps/libffi && ./configure --enable-static --enable-builddir=build_out
 	make -C deps/libffi
 
-$(CFILES): out/edge_blobs.cc
+$(CFILES): out/zero_blobs.cc
 
-out/edge_blobs.cc: $(JSFILES) out/config.json | out
+out/zero_blobs.cc: $(JSFILES) out/config.json | out
 	node tools/blob2c.js $@ $(JSFILES) out/config.json
 
 out:
@@ -139,7 +139,7 @@ lint-cpp:
 
 lint: | lint-js lint-cpp
 
-test: | lint out/edge
+test: | lint out/zero
 	tools/test.js test
 
 .PHONY: clean test lint-js lint-cpp
