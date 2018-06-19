@@ -1,5 +1,9 @@
 CC = g++
-CFLAGS = -Wall -std=c++1z -stdlib=libc++
+CFLAGS = -Wall -std=c++14
+
+ifeq ($(shell uname),Darwin)
+	CFLAGS += -stdlib=libc++
+endif
 
 UNAME_M=$(shell uname -m)
 ifeq ($(findstring x86_64,$(UNAME_M)),x86_64)
