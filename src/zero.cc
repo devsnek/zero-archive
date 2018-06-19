@@ -162,7 +162,7 @@ static const char* v8_argv[] = {
   "--experimental-extras",
   "--enable-experimental-builtins",
 };
-static int v8_argc = std::size(v8_argv);
+static int v8_argc = zero::arraysize(v8_argv);
 
 int main(int process_argc, char** process_argv) {
   process_argv = uv_setup_args(process_argc, process_argv);
