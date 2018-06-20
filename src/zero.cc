@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>  // PATH_MAX
-#include <iterator>  // std::size
 
 #include "v8.h"
 #include "zero.h"
