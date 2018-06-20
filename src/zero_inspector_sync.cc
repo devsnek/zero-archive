@@ -1,6 +1,6 @@
 #include "v8.h"
 #include "v8-inspector.h"
-#include "edge.h"
+#include "zero.h"
 
 using v8::Array;
 using v8::Context;
@@ -15,7 +15,7 @@ using v8::String;
 using v8::Value;
 using v8::Value;
 
-namespace edge {
+namespace zero {
 namespace inspector {
 
 class InspectorFrontend final : public v8_inspector::V8Inspector::Channel {
@@ -153,11 +153,11 @@ void Stop(const FunctionCallbackInfo<Value>& args) {
 }
 
 void Init(Local<Context> context, Local<Object> target) {
-  EDGE_SET_PROPERTY(context, target, "start", Start);
-  EDGE_SET_PROPERTY(context, target, "stop", Stop);
+  ZERO_SET_PROPERTY(context, target, "start", Start);
+  ZERO_SET_PROPERTY(context, target, "stop", Stop);
 }
 
 }  // namespace inspector
-}  // namespace edge
+}  // namespace zero
 
-EDGE_REGISTER_INTERNAL(inspector_sync, edge::inspector::Init);
+ZERO_REGISTER_INTERNAL(inspector_sync, zero::inspector::Init);

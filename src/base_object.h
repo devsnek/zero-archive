@@ -25,7 +25,7 @@
 #include <type_traits>  // std::remove_reference
 #include "v8.h"
 
-namespace edge {
+namespace zero {
 
 class Environment;
 
@@ -95,6 +95,6 @@ inline T* Unwrap(v8::Local<v8::Object> obj) {
       return __VA_ARGS__;                                                     \
   } while (0)
 
-}  // namespace edge
+}  // namespace zero
 
 #endif  // SRC_BASE_OBJECT_H_
