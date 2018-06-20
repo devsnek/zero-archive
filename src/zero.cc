@@ -184,8 +184,8 @@ int main(int process_argc, char** process_argv) {
   // argv and argc have been modified to include arguments
   // not used by V8
 
-  zero::ZeroPlatform* platform = new zero::ZeroPlatform(4);
-  V8::InitializePlatform(platform);
+  zero::platform = new zero::ZeroPlatform(4);
+  V8::InitializePlatform(zero::platform);
   V8::Initialize();
 
   Isolate::CreateParams create_params;
@@ -193,9 +193,10 @@ int main(int process_argc, char** process_argv) {
       ArrayBuffer::Allocator::NewDefaultAllocator();
   Isolate* isolate = Isolate::New(create_params);
 
-  platform->RegisterIsolate(isolate, uv_default_loop());
+  zero::platform->RegisterIsolate(isolate, uv_default_loop());
 
   isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+  isolate->SetCaptureStackTraceForUncaughtExceptions(true);
 
 #define V(name) _zero_register_##name()
   ZERO_INTERNAL_MODULES(V)
@@ -264,7 +265,7 @@ int main(int process_argc, char** process_argv) {
     do {
       uv_run(event_loop, UV_RUN_DEFAULT);
 
-      platform->DrainTasks(isolate);
+      zero::platform->DrainTasks(isolate);
 
       zero::InternalCallbackScope::Run(isolate);
 
@@ -282,7 +283,7 @@ int main(int process_argc, char** process_argv) {
 
   zero::id_to_script_map.clear();
 
-  platform->UnregisterIsolate(isolate);
+  zero::platform->UnregisterIsolate(isolate);
   isolate->Dispose();
   V8::Dispose();
   V8::ShutdownPlatform();

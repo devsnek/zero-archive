@@ -260,6 +260,9 @@ enum EmbedderKeys {
 
 static v8::Eternal<v8::Function> exit_handler;
 
+class ZeroPlatform;
+static ZeroPlatform* platform;
+
 namespace loader {
 class ModuleWrap;
 }
