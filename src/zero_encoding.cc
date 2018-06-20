@@ -13,7 +13,7 @@
 #include <unicode/ustring.h>
 
 #include "v8.h"
-#include "edge.h"
+#include "zero.h"
 #include "base_object-inl.h"
 
 using v8::ArrayBuffer;
@@ -31,7 +31,7 @@ using v8::String;
 using v8::Uint8Array;
 using v8::Value;
 
-namespace edge {
+namespace zero {
 namespace encoding {
 
 static void EncodeUtf8String(const FunctionCallbackInfo<Value>& args) {
@@ -178,17 +178,17 @@ void Init(Local<Context> context, Local<Object> target) {
 
   Local<v8::FunctionTemplate> tpl =
     BaseObject::MakeJSTemplate(isolate, "NativeDecoder", Decoder::Create);
-  EDGE_SET_PROTO_PROP(context, tpl, "decode", Decoder::Decode);
-  EDGE_SET_PROPERTY(context, target, "NativeDecoder", tpl->GetFunction());
+  ZERO_SET_PROTO_PROP(context, tpl, "decode", Decoder::Decode);
+  ZERO_SET_PROPERTY(context, target, "NativeDecoder", tpl->GetFunction());
 
-  EDGE_SET_PROPERTY(context, target, "encodeUtf8String", EncodeUtf8String);
+  ZERO_SET_PROPERTY(context, target, "encodeUtf8String", EncodeUtf8String);
 
-  EDGE_SET_PROPERTY(context, target, "FLAGS_FLUSH", Decoder::FLAGS_FLUSH);
-  EDGE_SET_PROPERTY(context, target, "FLAGS_FATAL", Decoder::FLAGS_FATAL);
-  EDGE_SET_PROPERTY(context, target, "FLAGS_IGNORE_BOM", Decoder::FLAGS_IGNORE_BOM);
+  ZERO_SET_PROPERTY(context, target, "FLAGS_FLUSH", Decoder::FLAGS_FLUSH);
+  ZERO_SET_PROPERTY(context, target, "FLAGS_FATAL", Decoder::FLAGS_FATAL);
+  ZERO_SET_PROPERTY(context, target, "FLAGS_IGNORE_BOM", Decoder::FLAGS_IGNORE_BOM);
 }
 
 }  // namespace encoding
-}  // namespace edge
+}  // namespace zero
 
-EDGE_REGISTER_INTERNAL(encoding, edge::encoding::Init);
+ZERO_REGISTER_INTERNAL(encoding, zero::encoding::Init);

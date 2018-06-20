@@ -1,5 +1,5 @@
-#ifndef SRC_EDGE_PLATFORM_H_
-#define SRC_EDGE_PLATFORM_H_
+#ifndef SRC_ZERO_PLATFORM_H_
+#define SRC_ZERO_PLATFORM_H_
 
 #include <uv.h>
 
@@ -11,12 +11,12 @@
 
 #include "v8.h"
 #include "libplatform/libplatform.h"
-#include "edge.h"
-#include "edge_mutex.h"
+#include "zero.h"
+#include "zero_mutex.h"
 
-namespace edge {
+namespace zero {
 
-class EdgePlatform;
+class ZeroPlatform;
 class IsolateData;
 class PerIsolatePlatformData;
 
@@ -127,10 +127,10 @@ class MultiIsolatePlatform : public v8::Platform {
   virtual void UnregisterIsolate(v8::Isolate* isolate) = 0;
 };
 
-class EdgePlatform : public MultiIsolatePlatform {
+class ZeroPlatform : public MultiIsolatePlatform {
  public:
-  explicit EdgePlatform(int thread_pool_size);
-  virtual ~EdgePlatform() {}
+  explicit ZeroPlatform(int thread_pool_size);
+  virtual ~ZeroPlatform() {}
 
   void DrainTasks(v8::Isolate* isolate) override;
   void CancelPendingDelayedTasks(v8::Isolate* isolate) override;
@@ -167,6 +167,6 @@ class EdgePlatform : public MultiIsolatePlatform {
   std::shared_ptr<WorkerThreadsTaskRunner> worker_thread_task_runner_;
 };
 
-}  // namespace edge
+}  // namespace zero
 
-#endif  // SRC_EDGE_PLATFORM_H_
+#endif  // SRC_ZERO_PLATFORM_H_

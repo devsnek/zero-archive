@@ -1,10 +1,10 @@
 #include <uv.h>
 
 #include "v8.h"
-#include "edge.h"
+#include "zero.h"
 #include "base_object-inl.h"
 
-namespace edge {
+namespace zero {
 namespace tty {
 
 using v8::Context;
@@ -38,7 +38,7 @@ class TTYWrap : public BaseObject {
       uv_read_start(reinterpret_cast<uv_stream_t*>(&handle_), alloc_cb, ReadCallback);
       uv_tty_set_mode(&handle_, UV_TTY_MODE_RAW);
     }
-    EDGE_SET_PROPERTY(isolate->GetCurrentContext(), obj, "isTTY", uv_guess_handle(fd) == UV_TTY);
+    ZERO_SET_PROPERTY(isolate->GetCurrentContext(), obj, "isTTY", uv_guess_handle(fd) == UV_TTY);
   }
 
   ~TTYWrap() {
@@ -116,13 +116,13 @@ void Init(Local<Context> context, Local<Object> target) {
 
   Local<FunctionTemplate> tpl = BaseObject::MakeJSTemplate(isolate, "TTYWrap", TTYWrap::New);
 
-  EDGE_SET_PROTO_PROP(context, tpl, "write", TTYWrap::Write);
-  EDGE_SET_PROTO_PROP(context, tpl, "end", TTYWrap::End);
+  ZERO_SET_PROTO_PROP(context, tpl, "write", TTYWrap::Write);
+  ZERO_SET_PROTO_PROP(context, tpl, "end", TTYWrap::End);
 
-  target->Set(EDGE_STRING(isolate, "TTYWrap"), tpl->GetFunction());
+  target->Set(ZERO_STRING(isolate, "TTYWrap"), tpl->GetFunction());
 }
 
 }  // namespace tty
-}  // namespace edge
+}  // namespace zero
 
-EDGE_REGISTER_INTERNAL(tty, edge::tty::Init);
+ZERO_REGISTER_INTERNAL(tty, zero::tty::Init);

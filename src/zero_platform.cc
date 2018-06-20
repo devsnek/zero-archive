@@ -3,10 +3,10 @@
 #include <utility>  // std::move
 
 #include "v8.h"
-#include "edge.h"
-#include "edge_platform.h"
+#include "zero.h"
+#include "zero_platform.h"
 
-namespace edge {
+namespace zero {
 
 using v8::HandleScope;
 using v8::Isolate;
@@ -114,13 +114,13 @@ int PerIsolatePlatformData::unref() {
   return --ref_count_;
 }
 
-EdgePlatform::EdgePlatform(int thread_pool_size) {
+ZeroPlatform::ZeroPlatform(int thread_pool_size) {
   worker_thread_task_runner_ = std::make_shared<WorkerThreadsTaskRunner>(thread_pool_size);
   TracingController* controller = new TracingController();
   tracing_controller_.reset(controller);
 }
 
-void EdgePlatform::RegisterIsolate(Isolate* isolate, uv_loop_t* loop) {
+void ZeroPlatform::RegisterIsolate(Isolate* isolate, uv_loop_t* loop) {
   Mutex::ScopedLock lock(per_isolate_mutex_);
   std::shared_ptr<PerIsolatePlatformData> existing = per_isolate_[isolate];
   if (existing) {
@@ -131,7 +131,7 @@ void EdgePlatform::RegisterIsolate(Isolate* isolate, uv_loop_t* loop) {
   }
 }
 
-void EdgePlatform::UnregisterIsolate(Isolate* isolate) {
+void ZeroPlatform::UnregisterIsolate(Isolate* isolate) {
   Mutex::ScopedLock lock(per_isolate_mutex_);
   std::shared_ptr<PerIsolatePlatformData> existing = per_isolate_[isolate];
   CHECK(existing);
@@ -140,7 +140,7 @@ void EdgePlatform::UnregisterIsolate(Isolate* isolate) {
   }
 }
 
-void EdgePlatform::Shutdown() {
+void ZeroPlatform::Shutdown() {
   worker_thread_task_runner_->Shutdown();
 
   {
@@ -149,7 +149,7 @@ void EdgePlatform::Shutdown() {
   }
 }
 
-int EdgePlatform::NumberOfWorkerThreads() {
+int ZeroPlatform::NumberOfWorkerThreads() {
   return worker_thread_task_runner_->NumberOfWorkerThreads();
 }
 
@@ -180,7 +180,7 @@ void PerIsolatePlatformData::CancelPendingDelayedTasks() {
   scheduled_delayed_tasks_.clear();
 }
 
-void EdgePlatform::DrainTasks(Isolate* isolate) {
+void ZeroPlatform::DrainTasks(Isolate* isolate) {
   std::shared_ptr<PerIsolatePlatformData> per_isolate = ForIsolate(isolate);
 
   do {
@@ -224,56 +224,56 @@ bool PerIsolatePlatformData::FlushForegroundTasksInternal() {
   return did_work;
 }
 
-void EdgePlatform::CallOnWorkerThread(std::unique_ptr<Task> task) {
+void ZeroPlatform::CallOnWorkerThread(std::unique_ptr<Task> task) {
   worker_thread_task_runner_->PostTask(std::move(task));
 }
 
 std::shared_ptr<PerIsolatePlatformData>
-EdgePlatform::ForIsolate(Isolate* isolate) {
+ZeroPlatform::ForIsolate(Isolate* isolate) {
   Mutex::ScopedLock lock(per_isolate_mutex_);
   std::shared_ptr<PerIsolatePlatformData> data = per_isolate_[isolate];
   return data;
 }
 
-void EdgePlatform::CallOnForegroundThread(Isolate* isolate, Task* task) {
+void ZeroPlatform::CallOnForegroundThread(Isolate* isolate, Task* task) {
   ForIsolate(isolate)->PostTask(std::unique_ptr<Task>(task));
 }
 
-void EdgePlatform::CallDelayedOnForegroundThread(
+void ZeroPlatform::CallDelayedOnForegroundThread(
     Isolate* isolate, Task* task, double delay_in_seconds) {
   ForIsolate(isolate)->PostDelayedTask(std::unique_ptr<Task>(task), delay_in_seconds);
 }
 
-void EdgePlatform::CallDelayedOnWorkerThread(std::unique_ptr<Task> task,
+void ZeroPlatform::CallDelayedOnWorkerThread(std::unique_ptr<Task> task,
                                              double delay_in_seconds) {
   fprintf(stderr, "delayed task queued in %f\n", delay_in_seconds);
   // ForIsolate(Isolate::GetCurrent())->PostDelayedTask(
   //   std::move(task), delay_in_seconds);
 }
 
-bool EdgePlatform::FlushForegroundTasks(v8::Isolate* isolate) {
+bool ZeroPlatform::FlushForegroundTasks(v8::Isolate* isolate) {
   return ForIsolate(isolate)->FlushForegroundTasksInternal();
 }
 
-void EdgePlatform::CancelPendingDelayedTasks(v8::Isolate* isolate) {
+void ZeroPlatform::CancelPendingDelayedTasks(v8::Isolate* isolate) {
   ForIsolate(isolate)->CancelPendingDelayedTasks();
 }
 
 std::shared_ptr<v8::TaskRunner>
-EdgePlatform::GetForegroundTaskRunner(Isolate* isolate) {
+ZeroPlatform::GetForegroundTaskRunner(Isolate* isolate) {
   return ForIsolate(isolate);
 }
 
-double EdgePlatform::MonotonicallyIncreasingTime() {
+double ZeroPlatform::MonotonicallyIncreasingTime() {
   // Convert nanos to seconds.
   return uv_hrtime() / 1e9;
 }
 
-double EdgePlatform::CurrentClockTimeMillis() {
+double ZeroPlatform::CurrentClockTimeMillis() {
   return SystemClockTimeMillis();
 }
 
-TracingController* EdgePlatform::GetTracingController() {
+TracingController* ZeroPlatform::GetTracingController() {
   return tracing_controller_.get();
 }
 
@@ -346,4 +346,4 @@ std::queue<std::unique_ptr<T>> TaskQueue<T>::PopAll() {
   return result;
 }
 
-}  // namespace edge
+}  // namespace zero

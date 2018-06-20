@@ -1,5 +1,5 @@
-#ifndef SRC_EDGE_H_
-#define SRC_EDGE_H_
+#ifndef SRC_ZERO_H_
+#define SRC_ZERO_H_
 
 #include <stdlib.h>
 #include <unordered_map>
@@ -45,7 +45,7 @@
 
 template <typename T> inline void USE(T&&) {};
 
-inline void EDGE_SET_PROPERTY(
+inline void ZERO_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
@@ -56,7 +56,7 @@ inline void EDGE_SET_PROPERTY(
                   v8::String::NewFromUtf8(isolate, value)));
 }
 
-inline void EDGE_SET_PROPERTY(
+inline void ZERO_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
@@ -67,7 +67,7 @@ inline void EDGE_SET_PROPERTY(
                   v8::Number::New(isolate, value)));
 }
 
-inline void EDGE_SET_PROPERTY(
+inline void ZERO_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
@@ -78,15 +78,15 @@ inline void EDGE_SET_PROPERTY(
                   v8::Integer::New(isolate, value)));
 }
 
-inline void EDGE_SET_PROPERTY(
+inline void ZERO_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
     size_t value) {
-  return EDGE_SET_PROPERTY(context, target, name, (int32_t) value);
+  return ZERO_SET_PROPERTY(context, target, name, (int32_t) value);
 }
 
-inline void EDGE_SET_PROPERTY(
+inline void ZERO_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
@@ -96,20 +96,20 @@ inline void EDGE_SET_PROPERTY(
                   value));
 }
 
-inline void EDGE_SET_PROPERTY(
+inline void ZERO_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
     const char* name,
     v8::FunctionCallback fn) {
   v8::Isolate* isolate = context->GetIsolate();
-  return EDGE_SET_PROPERTY(context, target, name,
+  return ZERO_SET_PROPERTY(context, target, name,
       v8::FunctionTemplate::New(
         isolate, fn,
         v8::Local<v8::Value>(), v8::Local<v8::Signature>(), 0,
         v8::ConstructorBehavior::kThrow)->GetFunction());
 }
 
-inline void EDGE_SET_PROTO_PROP(
+inline void ZERO_SET_PROTO_PROP(
     v8::Local<v8::Context> context,
     v8::Local<v8::FunctionTemplate> that,
     const char* name,
@@ -120,18 +120,18 @@ inline void EDGE_SET_PROTO_PROP(
       v8::FunctionTemplate::New(isolate, callback));
 }
 
-#define EDGE_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
+#define ZERO_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
 
-#define EDGE_THROW_EXCEPTION(isolate, message) \
+#define ZERO_THROW_EXCEPTION(isolate, message) \
   (void) isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate, message)))
 
-#define EDGE_REGISTER_INTERNAL(name, fn)                                      \
-  static edge::edge_module _edge_module_##name = {#name, fn};                 \
-  void _edge_register_##name() {                                              \
-    edge_module_register(&_edge_module_##name);                               \
+#define ZERO_REGISTER_INTERNAL(name, fn)                                      \
+  static zero::zero_module _zero_module_##name = {#name, fn};                 \
+  void _zero_register_##name() {                                              \
+    zero_module_register(&_zero_module_##name);                               \
   }
 
-namespace edge {
+namespace zero {
 
 template <typename T, size_t N>
 inline constexpr size_t arraysize(const T(&)[N]) { return N; }
@@ -243,15 +243,15 @@ inline bool IsBigEndian() {
   return GetEndianness() == kBigEndian;
 }
 
-typedef void (*edgeModuleCallback)(v8::Local<v8::Context>, v8::Local<v8::Object>);
+typedef void (*zeroModuleCallback)(v8::Local<v8::Context>, v8::Local<v8::Object>);
 
-struct edge_module {
+struct zero_module {
   const char* im_name;
-  edgeModuleCallback im_function;
-  struct edge_module* im_link;
+  zeroModuleCallback im_function;
+  struct zero_module* im_link;
 };
 
-void edge_module_register(void*);
+void zero_module_register(void*);
 
 enum EmbedderKeys {
   kBindingCache,
@@ -281,6 +281,6 @@ class InternalCallbackScope {
   v8::Isolate* isolate_;
 };
 
-}  // namespace edge
+}  // namespace zero
 
-#endif  // SRC_EDGE_H_
+#endif  // SRC_ZERO_H_

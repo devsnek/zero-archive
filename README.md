@@ -1,9 +1,9 @@
-# edge
+# zero
 
-edge is a JavaScript runtime which has native ES Modules and shares many
+zero is a JavaScript runtime which has native ES Modules and shares many
 browser spec globals.
 
-A lot of code in edge is inspired from other codebases. Those codebases will be
+A lot of code in zero is inspired from other codebases. Those codebases will be
 linked at the top of the individual files.
 
 Check out the [0.0.1 Release Project][] for info on what needs to be done still.
@@ -23,7 +23,7 @@ Check out the [0.0.1 Release Project][] for info on what needs to be done still.
 
 ### FFI
 
-- `edge.loadDyanmicLibrary(path, functions)`
+- `zero.loadDyanmicLibrary(path, functions)`
   * `path` `{string}` Path to dynamic library. If relative it will be resolved
     to the current working directory.
   * `functions` `{object}` Object of definitions for the exported functions
@@ -62,4 +62,4 @@ and takes a special `Pointer` type (that the user cannot construct), while
 `cstring` will take the pointer and produce a string from it. `cstring` is
 equivalent to `char*`
 
-[0.0.1 Release Project]: https://github.com/devsnek/edge/projects/1?fullscreen=true
+[0.0.1 Release Project]: https://github.com/devsnek/zero/projects/1?fullscreen=true
