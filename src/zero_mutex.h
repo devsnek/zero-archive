@@ -1,10 +1,10 @@
-#ifndef SRC_EDGE_MUTEX_H_
-#define SRC_EDGE_MUTEX_H_
+#ifndef SRC_ZERO_MUTEX_H_
+#define SRC_ZERO_MUTEX_H_
 
-#include "edge.h"
+#include "zero.h"
 #include "uv.h"
 
-namespace edge {
+namespace zero {
 
 template <typename Traits> class ConditionVariableBase;
 template <typename Traits> class MutexBase;
@@ -182,6 +182,6 @@ MutexBase<Traits>::ScopedUnlock::~ScopedUnlock() {
   Traits::mutex_lock(&mutex_.mutex_);
 }
 
-}  // namespace edge
+}  // namespace zero
 
-#endif  // SRC_EDGE_MUTEX_H_
+#endif  // SRC_ZERO_MUTEX_H_

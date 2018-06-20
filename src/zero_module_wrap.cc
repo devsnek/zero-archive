@@ -1,8 +1,8 @@
 #include <algorithm>
-#include "edge_module_wrap.h"
-#include "edge.h"
+#include "zero_module_wrap.h"
+#include "zero.h"
 
-namespace edge {
+namespace zero {
 namespace loader {
 
 using v8::Array;
@@ -124,7 +124,7 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
     }
   }
 
-  if (!that->Set(context, EDGE_STRING(isolate, "url"), url).FromMaybe(false)) {
+  if (!that->Set(context, ZERO_STRING(isolate, "url"), url).FromMaybe(false)) {
     // try_catch.ReThrow();
     return;
   }
@@ -184,7 +184,7 @@ void ModuleWrap::Link(const FunctionCallbackInfo<Value>& args) {
     Local<Value> resolve_return_value =
         maybe_resolve_return_value.ToLocalChecked();
     if (!resolve_return_value->IsPromise()) {
-      EDGE_THROW_EXCEPTION(isolate, "linking error, expected resolver to return a promise");
+      ZERO_THROW_EXCEPTION(isolate, "linking error, expected resolver to return a promise");
     }
     Local<Promise> resolve_promise = resolve_return_value.As<Promise>();
     obj->resolve_cache_[specifier_std].Reset(isolate, resolve_promise);
@@ -236,7 +236,7 @@ void ModuleWrap::GetNamespace(const FunctionCallbackInfo<Value>& args) {
 
   switch (module->GetStatus()) {
     default:
-      return EDGE_THROW_EXCEPTION(
+      return ZERO_THROW_EXCEPTION(
           isolate, "cannot get namespace, Module has not been instantiated");
     case v8::Module::Status::kInstantiated:
     case v8::Module::Status::kEvaluating:
@@ -295,7 +295,7 @@ MaybeLocal<Module> ModuleWrap::ResolveCallback(Local<Context> context,
 
   ModuleWrap* dependent = ModuleWrap::GetFromModule(referrer);
   if (dependent == nullptr) {
-    EDGE_THROW_EXCEPTION(isolate, "linking error, unknown module");
+    ZERO_THROW_EXCEPTION(isolate, "linking error, unknown module");
     return MaybeLocal<Module>();
   }
 
@@ -303,7 +303,7 @@ MaybeLocal<Module> ModuleWrap::ResolveCallback(Local<Context> context,
   std::string specifier_std(*specifier_utf8, specifier_utf8.length());
 
   if (dependent->resolve_cache_.count(specifier_std) != 1) {
-    EDGE_THROW_EXCEPTION(isolate, "linking error, not in local cache");
+    ZERO_THROW_EXCEPTION(isolate, "linking error, not in local cache");
     return MaybeLocal<Module>();
   }
 
@@ -311,14 +311,14 @@ MaybeLocal<Module> ModuleWrap::ResolveCallback(Local<Context> context,
       dependent->resolve_cache_[specifier_std].Get(isolate);
 
   if (resolve_promise->State() != Promise::kFulfilled) {
-    EDGE_THROW_EXCEPTION(isolate,
+    ZERO_THROW_EXCEPTION(isolate,
         "linking error, dependency promises must be resolved on instantiate");
     return MaybeLocal<Module>();
   }
 
   Local<Object> module_object = resolve_promise->Result().As<Object>();
   if (module_object.IsEmpty() || !module_object->IsObject()) {
-    EDGE_THROW_EXCEPTION(isolate,
+    ZERO_THROW_EXCEPTION(isolate,
         "linking error, expected a valid module object from resolver");
     return MaybeLocal<Module>();
   }
@@ -352,7 +352,7 @@ MaybeLocal<Promise> ModuleWrap::ImportModuleDynamically(
       Local<UnboundScript> s = GetScriptFromID(iso, id);
       CHECK(!s.IsEmpty());
       Local<Object> o = Object::New(iso);
-      EDGE_SET_PROPERTY(context, o, "url", s->GetScriptName());
+      ZERO_SET_PROPERTY(context, o, "url", s->GetScriptName());
       import_args[2] = o;
     } else if (type == 1) {
       int id = host_defined_options->Get(1).As<Integer>()->Value();
@@ -425,25 +425,25 @@ void ModuleWrap::Initialize(Local<Context> context, Local<Object> target) {
 
   Local<FunctionTemplate> tpl = BaseObject::MakeJSTemplate(isolate, "ModuleWrap", New);
 
-  EDGE_SET_PROTO_PROP(context, tpl, "link", Link);
-  EDGE_SET_PROTO_PROP(context, tpl, "instantiate", Instantiate);
-  EDGE_SET_PROTO_PROP(context, tpl, "evaluate", Evaluate);
-  EDGE_SET_PROTO_PROP(context, tpl, "getNamespace", GetNamespace);
-  EDGE_SET_PROTO_PROP(context, tpl, "getStatus", GetStatus);
-  EDGE_SET_PROTO_PROP(context, tpl, "getError", GetError);
-  EDGE_SET_PROTO_PROP(context, tpl, "getStaticDependencySpecifiers",
+  ZERO_SET_PROTO_PROP(context, tpl, "link", Link);
+  ZERO_SET_PROTO_PROP(context, tpl, "instantiate", Instantiate);
+  ZERO_SET_PROTO_PROP(context, tpl, "evaluate", Evaluate);
+  ZERO_SET_PROTO_PROP(context, tpl, "getNamespace", GetNamespace);
+  ZERO_SET_PROTO_PROP(context, tpl, "getStatus", GetStatus);
+  ZERO_SET_PROTO_PROP(context, tpl, "getError", GetError);
+  ZERO_SET_PROTO_PROP(context, tpl, "getStaticDependencySpecifiers",
                       GetStaticDependencySpecifiers);
 
-  target->Set(EDGE_STRING(isolate, "ModuleWrap"), tpl->GetFunction());
-  EDGE_SET_PROPERTY(context, target,
+  target->Set(ZERO_STRING(isolate, "ModuleWrap"), tpl->GetFunction());
+  ZERO_SET_PROPERTY(context, target,
                     "setImportModuleDynamicallyCallback",
                     ModuleWrap::SetImportModuleDynamicallyCallback);
-  EDGE_SET_PROPERTY(context, target,
+  ZERO_SET_PROPERTY(context, target,
                     "setInitializeImportMetaObjectCallback",
                     ModuleWrap::SetInitializeImportMetaObjectCallback);
 
 #define V(name) \
-  EDGE_SET_PROPERTY(context, target, #name, v8::Module::name);
+  ZERO_SET_PROPERTY(context, target, #name, v8::Module::name);
   V(kUninstantiated);
   V(kInstantiating);
   V(kInstantiated);
@@ -454,6 +454,6 @@ void ModuleWrap::Initialize(Local<Context> context, Local<Object> target) {
 }
 
 }  // namespace loader
-}  // namespace edge
+}  // namespace zero
 
-EDGE_REGISTER_INTERNAL(module_wrap, edge::loader::ModuleWrap::Initialize);
+ZERO_REGISTER_INTERNAL(module_wrap, zero::loader::ModuleWrap::Initialize);

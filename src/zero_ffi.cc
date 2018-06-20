@@ -2,7 +2,7 @@
 
 #include "ffi.h"
 #include "v8.h"
-#include "edge.h"
+#include "zero.h"
 #include "base_object-inl.h"
 
 using v8::Array;
@@ -18,7 +18,7 @@ using v8::String;
 using v8::Uint8Array;
 using v8::Value;
 
-namespace edge {
+namespace zero {
 namespace ffi {
 
 Local<Value> WrapPointer(Isolate* isolate, char* ptr, size_t size = 0) {
@@ -113,28 +113,28 @@ void Dlopen(const FunctionCallbackInfo<Value>& args) {
       String::Utf8Value name(isolate, functions->Get(context, i).ToLocalChecked());
       char* ptr = reinterpret_cast<char*>(dlsym(handle, *name));
       if (!ptr) {
-        args.GetReturnValue().Set(EDGE_STRING(isolate, dlerror()));
+        args.GetReturnValue().Set(ZERO_STRING(isolate, dlerror()));
         break;
       }
       pointers->Set(context, i, WrapPointer(isolate, ptr)).ToChecked();
     }
     args.GetReturnValue().Set(pointers);
   } else {
-    args.GetReturnValue().Set(EDGE_STRING(isolate, dlerror()));
+    args.GetReturnValue().Set(ZERO_STRING(isolate, dlerror()));
   }
 }
 
 void Init(Local<Context> context, Local<Object> target) {
   Isolate* isolate = context->GetIsolate();
 
-  EDGE_SET_PROPERTY(context, target, "writePointer", WritePointer);
-  EDGE_SET_PROPERTY(context, target, "readPointer", ReadPointer);
-  EDGE_SET_PROPERTY(context, target, "readCString", ReadCString);
-  EDGE_SET_PROPERTY(context, target, "ffi_prep_cif", PrepCif);
-  EDGE_SET_PROPERTY(context, target, "ffi_call", Call);
-  EDGE_SET_PROPERTY(context, target, "dlopen", Dlopen);
+  ZERO_SET_PROPERTY(context, target, "writePointer", WritePointer);
+  ZERO_SET_PROPERTY(context, target, "readPointer", ReadPointer);
+  ZERO_SET_PROPERTY(context, target, "readCString", ReadCString);
+  ZERO_SET_PROPERTY(context, target, "ffi_prep_cif", PrepCif);
+  ZERO_SET_PROPERTY(context, target, "ffi_call", Call);
+  ZERO_SET_PROPERTY(context, target, "dlopen", Dlopen);
 
-#define V(enum) EDGE_SET_PROPERTY(context, target, #enum, enum);
+#define V(enum) ZERO_SET_PROPERTY(context, target, #enum, enum);
 
   V(FFI_OK)
   V(FFI_BAD_TYPEDEF)
@@ -183,25 +183,25 @@ void Init(Local<Context> context, Local<Object> target) {
 
 #undef V
 
-  EDGE_SET_PROPERTY(context, target, "ffi_arg_size", sizeof(ffi_arg));
-  EDGE_SET_PROPERTY(context, target, "ffi_sarg_size", sizeof(ffi_sarg));
-  EDGE_SET_PROPERTY(context, target, "ffi_type_size", sizeof(ffi_type));
-  EDGE_SET_PROPERTY(context, target, "ffi_cif_size", sizeof(ffi_cif));
+  ZERO_SET_PROPERTY(context, target, "ffi_arg_size", sizeof(ffi_arg));
+  ZERO_SET_PROPERTY(context, target, "ffi_sarg_size", sizeof(ffi_sarg));
+  ZERO_SET_PROPERTY(context, target, "ffi_type_size", sizeof(ffi_type));
+  ZERO_SET_PROPERTY(context, target, "ffi_cif_size", sizeof(ffi_cif));
 
   Local<Object> types = v8::Object::New(isolate);
   Local<Object> sizes = v8::Object::New(isolate);
-  EDGE_SET_PROPERTY(context, target, "types", types);
-  EDGE_SET_PROPERTY(context, target, "sizeof", sizes);
+  ZERO_SET_PROPERTY(context, target, "types", types);
+  ZERO_SET_PROPERTY(context, target, "sizeof", sizes);
 
   // void special case
-  EDGE_SET_PROPERTY(context, types, "void",
+  ZERO_SET_PROPERTY(context, types, "void",
       WrapPointer(isolate, reinterpret_cast<char*>(&ffi_type_void)));
-  EDGE_SET_PROPERTY(context, sizes, "void", 0);
+  ZERO_SET_PROPERTY(context, sizes, "void", 0);
 
 #define V(name, type, ffi_type) \
-  EDGE_SET_PROPERTY(context, types, name, \
+  ZERO_SET_PROPERTY(context, types, name, \
       WrapPointer(isolate, reinterpret_cast<char*>(&ffi_type))); \
-  EDGE_SET_PROPERTY(context, sizes, name, sizeof(type));
+  ZERO_SET_PROPERTY(context, sizes, name, sizeof(type));
 
   V("uint8", uint8_t, ffi_type_uint8)
   V("int8", int8_t, ffi_type_sint8)
@@ -227,6 +227,6 @@ void Init(Local<Context> context, Local<Object> target) {
 }
 
 }  // namespace ffi
-}  // namespace edge
+}  // namespace zero
 
-EDGE_REGISTER_INTERNAL(ffi, edge::ffi::Init);
+ZERO_REGISTER_INTERNAL(ffi, zero::ffi::Init);

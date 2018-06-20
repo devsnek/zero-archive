@@ -23,10 +23,10 @@
 #define SRC_BASE_OBJECT_INL_H_
 
 #include "base_object.h"
-#include "edge.h"
+#include "zero.h"
 #include "v8.h"
 
-namespace edge {
+namespace zero {
 
 inline BaseObject::BaseObject(v8::Isolate* isolate, v8::Local<v8::Object> handle)
     : persistent_handle_(isolate, handle),
@@ -88,11 +88,11 @@ BaseObject::MakeJSTemplate(v8::Isolate* isolate,
                            const char* name,
                            v8::FunctionCallback constructor) {
   v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(isolate, constructor);
-  tpl->SetClassName(EDGE_STRING(isolate, name));
+  tpl->SetClassName(ZERO_STRING(isolate, name));
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
   return tpl;
 }
 
-}  // namespace edge
+}  // namespace zero
 
 #endif  // SRC_BASE_OBJECT_INL_H_

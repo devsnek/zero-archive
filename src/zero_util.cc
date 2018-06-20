@@ -1,5 +1,5 @@
 #include "v8.h"
-#include "edge.h"
+#include "zero.h"
 
 using v8::Array;
 using v8::Boolean;
@@ -17,7 +17,7 @@ using v8::Proxy;
 using v8::Value;
 using v8::V8;
 
-namespace edge {
+namespace zero {
 namespace util {
 
 static void GetPromiseDetails(const FunctionCallbackInfo<Value>& info) {
@@ -82,19 +82,19 @@ static void CreateMessage(const FunctionCallbackInfo<Value>& args) {
   int end_column;
 
   if (msg->GetSourceLine(context).ToLocal(&source_line))
-    EDGE_SET_PROPERTY(context, obj, "sourceLine", source_line);
+    ZERO_SET_PROPERTY(context, obj, "sourceLine", source_line);
 
-  EDGE_SET_PROPERTY(context, obj, "resourceName",
+  ZERO_SET_PROPERTY(context, obj, "resourceName",
       msg->GetScriptResourceName()->ToString());
 
   if (msg->GetLineNumber(context).To(&line_number))
-    EDGE_SET_PROPERTY(context, obj, "lineNumber", line_number);
+    ZERO_SET_PROPERTY(context, obj, "lineNumber", line_number);
 
   if (msg->GetStartColumn(context).To(&start_column))
-    EDGE_SET_PROPERTY(context, obj, "startColumn", start_column);
+    ZERO_SET_PROPERTY(context, obj, "startColumn", start_column);
 
   if (msg->GetEndColumn(context).To(&end_column))
-    EDGE_SET_PROPERTY(context, obj, "endColumn", end_column);
+    ZERO_SET_PROPERTY(context, obj, "endColumn", end_column);
 
   args.GetReturnValue().Set(obj);
 }
@@ -119,17 +119,17 @@ static void PreviewEntries(const FunctionCallbackInfo<Value>& args) {
 }
 
 static void Init(Local<Context> context, Local<Object> target) {
-  EDGE_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
-  EDGE_SET_PROPERTY(context, target, "getProxyDetails", GetProxyDetails);
-  EDGE_SET_PROPERTY(context, target, "runMicrotasks", RunMicrotasks);
-  EDGE_SET_PROPERTY(context, target, "enqueueMicrotask", EnqueueMicrotask);
-  EDGE_SET_PROPERTY(context, target, "safeToString", SafeToString);
-  EDGE_SET_PROPERTY(context, target, "setV8Flags", SetV8Flags);
-  EDGE_SET_PROPERTY(context, target, "createMessage", CreateMessage);
-  EDGE_SET_PROPERTY(context, target, "previewEntries", PreviewEntries);
+  ZERO_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
+  ZERO_SET_PROPERTY(context, target, "getProxyDetails", GetProxyDetails);
+  ZERO_SET_PROPERTY(context, target, "runMicrotasks", RunMicrotasks);
+  ZERO_SET_PROPERTY(context, target, "enqueueMicrotask", EnqueueMicrotask);
+  ZERO_SET_PROPERTY(context, target, "safeToString", SafeToString);
+  ZERO_SET_PROPERTY(context, target, "setV8Flags", SetV8Flags);
+  ZERO_SET_PROPERTY(context, target, "createMessage", CreateMessage);
+  ZERO_SET_PROPERTY(context, target, "previewEntries", PreviewEntries);
 
 #define V(name) \
-  EDGE_SET_PROPERTY(context, target, #name, Promise::PromiseState::name);
+  ZERO_SET_PROPERTY(context, target, #name, Promise::PromiseState::name);
   V(kPending);
   V(kFulfilled);
   V(kRejected);
@@ -137,6 +137,6 @@ static void Init(Local<Context> context, Local<Object> target) {
 }
 
 }  // namespace util
-}  // namespace edge
+}  // namespace zero
 
-EDGE_REGISTER_INTERNAL(util, edge::util::Init);
+ZERO_REGISTER_INTERNAL(util, zero::util::Init);

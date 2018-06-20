@@ -1,5 +1,5 @@
 #include "v8.h"
-#include "edge.h"
+#include "zero.h"
 
 using v8::Context;
 using v8::FunctionCallbackInfo;
@@ -7,7 +7,7 @@ using v8::Local;
 using v8::Object;
 using v8::Value;
 
-namespace edge {
+namespace zero {
 namespace types {
 
 #define VALUE_METHOD_MAP(V)                                                   \
@@ -47,12 +47,12 @@ namespace types {
 
 void Init(Local<Context> context, Local<Object> target) {
 #define V(type) \
-  EDGE_SET_PROPERTY(context, target, "is"#type, Is##type);
+  ZERO_SET_PROPERTY(context, target, "is"#type, Is##type);
   VALUE_METHOD_MAP(V)
 #undef V
 }
 
 }  // namespace types
-}  // namespace edge
+}  // namespace zero
 
-EDGE_REGISTER_INTERNAL(types, edge::types::Init);
+ZERO_REGISTER_INTERNAL(types, zero::types::Init);

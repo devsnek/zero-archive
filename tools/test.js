@@ -16,7 +16,7 @@ const RegExpEscape = (s) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 const { log, warn } = console;
 
 if (!require('../out/config').exposeBinding) {
-  warn('edge must be configured with --expose-binding to run tests');
+  warn('zero must be configured with --expose-binding to run tests');
   process.exit(1);
 }
 
@@ -55,9 +55,9 @@ async function exec(command, args) {
   });
 }
 
-const edge = path.resolve(__dirname, '..', 'out', 'edge');
+const zero = path.resolve(__dirname, '..', 'out', 'zero');
 
-const runEdgeTests = () => {
+const runZeroTests = () => {
   const tests = readdirRecursive(path.resolve(process.cwd(), process.argv[2]));
   log(`-- Queued ${tests.length} tests --`);
 
@@ -82,7 +82,7 @@ const runEdgeTests = () => {
       }
     }
 
-    let { code, output } = await exec(edge, [filename]);
+    let { code, output } = await exec(zero, [filename]);
 
     if (isMessageTest) {
       const patterns = (await readFile(filename.replace('.js', '.out'), 'utf8'))
@@ -113,7 +113,7 @@ const runEdgeTests = () => {
     if (code !== 0) {
       warn('FAIL', rel);
       warn(output);
-      warn('Command:', `${edge} ${filename}`);
+      warn('Command:', `${zero} ${filename}`);
 
       throw new Error('failed');
     }
@@ -128,7 +128,7 @@ const runWPT = () => {
   log(`\n-- [WPT] Queued ${wpt.length} tests --`);
 
   return Promise.all(wpt.map(async (name) => {
-    const { output } = await exec(edge, ['./test/wpt.js', `./test/web-platform-tests/${name}`]);
+    const { output } = await exec(zero, ['./test/wpt.js', `./test/web-platform-tests/${name}`]);
     if (/\u00D7/.test(output)) {
       warn(output);
       throw new Error('failed');
@@ -142,7 +142,7 @@ const runWPT = () => {
   let failed = false;
 
   try {
-    await runEdgeTests();
+    await runZeroTests();
   } catch {
     failed = true;
   }

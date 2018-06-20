@@ -1,12 +1,12 @@
-#ifndef SRC_EDGE_MODULE_WRAP_H_
-#define SRC_EDGE_MODULE_WRAP_H_
+#ifndef SRC_ZERO_MODULE_WRAP_H_
+#define SRC_ZERO_MODULE_WRAP_H_
 
 #include <string>
 #include <vector>
 #include <unordered_map>  // std::unordered_map
 #include "base_object-inl.h"
 
-namespace edge {
+namespace zero {
 namespace loader {
 
 class ModuleWrap : public BaseObject {
@@ -65,6 +65,6 @@ class ModuleWrap : public BaseObject {
 };
 
 }  // namespace loader
-}  // namespace edge
+}  // namespace zero
 
-#endif  // SRC_EDGE_MODULE_WRAP_H_
+#endif  // SRC_ZERO_MODULE_WRAP_H_

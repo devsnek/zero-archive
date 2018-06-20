@@ -1,6 +1,6 @@
 #include "uv.h"
 #include "v8.h"
-#include "edge.h"
+#include "zero.h"
 #include "base_object-inl.h"
 
 using v8::Context;
@@ -12,7 +12,7 @@ using v8::Local;
 using v8::Object;
 using v8::Value;
 
-namespace edge {
+namespace zero {
 namespace timer {
 
 class TimerWrap : public BaseObject {
@@ -64,12 +64,12 @@ static void Init(Local<Context> context, Local<Object> target) {
 
   Local<FunctionTemplate> tpl = BaseObject::MakeJSTemplate(isolate, "TimerWrap", TimerWrap::New);
 
-  EDGE_SET_PROTO_PROP(context, tpl, "update", TimerWrap::Update);
+  ZERO_SET_PROTO_PROP(context, tpl, "update", TimerWrap::Update);
 
-  EDGE_SET_PROPERTY(context, target, "TimerWrap", tpl->GetFunction());
+  ZERO_SET_PROPERTY(context, target, "TimerWrap", tpl->GetFunction());
 }
 
 }  // namespace timer
-}  // namespace edge
+}  // namespace zero
 
-EDGE_REGISTER_INTERNAL(timer_wrap, edge::timer::Init);
+ZERO_REGISTER_INTERNAL(timer_wrap, zero::timer::Init);
