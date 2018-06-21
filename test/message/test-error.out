@@ -3,4 +3,4 @@ throw new Error('message');
       ^
 Error: message
   at file:///*/test-error.js:1:7
-  at ModuleJob.run (loader/module_job:42:26)
+  at ModuleJob.run (loader/module_job:*:*)

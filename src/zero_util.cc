@@ -118,6 +118,32 @@ static void PreviewEntries(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(ret);
 }
 
+static void GetEnv(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+
+  if (!args[0]->IsSymbol()) {
+    String::Utf8Value key(isolate, args[0]);
+    const char* val = getenv(*key);
+    if (val) {
+      return args.GetReturnValue().Set(String::NewFromUtf8(isolate, val));
+    }
+  }
+}
+
+static void SetEnv(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  String::Utf8Value key(isolate, args[0]);
+  String::Utf8Value val(isolate, args[1]);
+  setenv(*key, *val, 1);
+}
+
+static void UnsetEnv(const FunctionCallbackInfo<Value>& args) {
+  if (args[0]->IsString()) {
+    String::Utf8Value key(args.GetIsolate(), args[0]);
+    unsetenv(*key);
+  }
+}
+
 static void Init(Local<Context> context, Local<Object> target) {
   ZERO_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
   ZERO_SET_PROPERTY(context, target, "getProxyDetails", GetProxyDetails);
@@ -127,6 +153,9 @@ static void Init(Local<Context> context, Local<Object> target) {
   ZERO_SET_PROPERTY(context, target, "setV8Flags", SetV8Flags);
   ZERO_SET_PROPERTY(context, target, "createMessage", CreateMessage);
   ZERO_SET_PROPERTY(context, target, "previewEntries", PreviewEntries);
+  ZERO_SET_PROPERTY(context, target, "getEnv", GetEnv);
+  ZERO_SET_PROPERTY(context, target, "setEnv", SetEnv);
+  ZERO_SET_PROPERTY(context, target, "unsetEnv", UnsetEnv);
 
 #define V(name) \
   ZERO_SET_PROPERTY(context, target, #name, Promise::PromiseState::name);

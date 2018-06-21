@@ -101,7 +101,11 @@ export function assert(condition) {
 }
 
 export function assertEqual(expected, actual) {
-  assert(expected === actual);
+  try {
+    assert(expected === actual);
+  } catch {
+    throw new Error(`${expected} !== ${actual}`);
+  }
 }
 
 export function assertDeepEqual(expected, actual) {

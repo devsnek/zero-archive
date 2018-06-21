@@ -21,15 +21,18 @@ using v8::FunctionCallbackInfo;
 using v8::FunctionTemplate;
 using v8::Local;
 using v8::MaybeLocal;
+using v8::Name;
 using v8::Number;
 using v8::Isolate;
 using v8::Object;
+using v8::ObjectTemplate;
 using v8::String;
 using v8::Value;
 using v8::V8;
 using v8::Persistent;
 using v8::Platform;
 using v8::Promise;
+using v8::PropertyCallbackInfo;
 using v8::TryCatch;
 
 #define ZERO_INTERNAL_MODULES(V) \
@@ -76,21 +79,21 @@ inline struct zero_module* get_module(const char* name) {
 
 namespace js_debug {
 
-static void DebugLog(const FunctionCallbackInfo<Value>& info) {
-  Isolate* isolate = info.GetIsolate();
+static void DebugLog(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
 
-  String::Utf8Value utf8(isolate, info[0].As<String>());
-  bool prefix = info[1]->IsTrue();
+  String::Utf8Value utf8(isolate, args[0].As<String>());
+  bool prefix = args[1]->IsTrue();
 
   fprintf(stdout, "%s%s", prefix ? "[zero] " : "", *utf8);
   fflush(stdout);
 }
 
-static void DebugError(const FunctionCallbackInfo<Value>& info) {
-  Isolate* isolate = info.GetIsolate();
+static void DebugError(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
 
-  String::Utf8Value utf8(isolate, info[0].As<String>());
-  bool prefix = info[1]->IsTrue();
+  String::Utf8Value utf8(isolate, args[0].As<String>());
+  bool prefix = args[1]->IsTrue();
 
   fprintf(stderr, "%s%s", prefix ? "[zero] " : "", *utf8);
   fflush(stderr);
@@ -106,18 +109,18 @@ static void Init(Local<Context> context, Local<Object> exports) {
 
 ZERO_REGISTER_INTERNAL(debug, zero::js_debug::Init);
 
-static void Bindings(const FunctionCallbackInfo<Value>& info) {
-  Isolate* isolate = info.GetIsolate();
+static void Bindings(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
   HandleScope handle_scope(isolate);
 
   Local<Context> context = isolate->GetCurrentContext();
 
-  Local<String> req = info[0].As<String>();
+  Local<String> req = args[0].As<String>();
 
   Local<Object> cache =
       context->GetEmbedderData(zero::EmbedderKeys::kBindingCache).As<Object>();
   if (cache->HasOwnProperty(context, req).FromMaybe(false)) {
-    info.GetReturnValue().Set(cache->Get(context, req).ToLocalChecked());
+    args.GetReturnValue().Set(cache->Get(context, req).ToLocalChecked());
     return;
   }
 
@@ -138,7 +141,7 @@ static void Bindings(const FunctionCallbackInfo<Value>& info) {
   }
 
   USE(cache->Set(context, req, exports));
-  info.GetReturnValue().Set(exports);
+  args.GetReturnValue().Set(exports);
 }
 
 static void Exit(const FunctionCallbackInfo<Value>& args) {

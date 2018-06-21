@@ -39,9 +39,9 @@ const readdirRecursive = (root, files = [], prefix = '') => {
   return files;
 };
 
-async function exec(command, args) {
+async function exec(command, args, options) {
   return new Promise((resolve) => {
-    const child = spawn(command, args);
+    const child = spawn(command, args, options);
     let output = '';
     child.stdout.on('data', (d) => {
       output += d;
@@ -82,7 +82,17 @@ const runZeroTests = () => {
       }
     }
 
-    let { code, output } = await exec(zero, [filename]);
+    let env = { ...process.env };
+
+    {
+      const match = /^\/\/ env ([^=]+?)=(.+?)$/m.exec(source);
+      if (match) {
+        const [, name, value] = match;
+        env[name] = value;
+      }
+    }
+
+    let { code, output } = await exec(zero, [filename], { env });
 
     if (isMessageTest) {
       const patterns = (await readFile(filename.replace('.js', '.out'), 'utf8'))
