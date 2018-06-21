@@ -101,15 +101,15 @@ export function assert(condition) {
 }
 
 export function assertEqual(expected, actual) {
-  try {
-    assert(expected === actual);
-  } catch {
+  if (expected !== actual) {
     throw new Error(`${expected} !== ${actual}`);
   }
 }
 
 export function assertDeepEqual(expected, actual) {
-  assert(deepEqual(expected, actual));
+  if (!deepEqual(expected, actual)) {
+    throw new Error(`${expected} !== ${actual}`);
+  }
 }
 
 global.addEventListener('exit', () => {

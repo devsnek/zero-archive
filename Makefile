@@ -95,12 +95,12 @@ LIBUV = deps/libuv/out/Release/libuv.a
 ICU = $(shell pkg-config --libs --cflags icu-uc icu-io icu-i18n)
 LIBFFI = deps/libffi/build_out/.libs/libffi.a
 
-LIBS = $(V8) $(LIBUV) $(LIBFFI)
+LIBS = $(LIBUV) $(LIBFFI)
 
 INCLUDES = -Ideps/v8/include -Ideps/libuv/include -Ideps/libffi/build_out/include
 
-out/zero: $(LIBS) $(CFLIES) $(HFILES) out/zero_blobs.cc | out
-	$(CC) $(CFLAGS) $(INCLUDES) $(LIBS) $(ICU) $(CFILES) out/zero_blobs.cc -o $@
+out/zero: $(LIBS) $(CFLIES) $(HFILES) out/zero_blobs.cc | out $(V8)
+	$(CC) $(CFLAGS) $(INCLUDES) $(V8) $(LIBS) $(ICU) $(CFILES) out/zero_blobs.cc -o $@
 
 $(V8):
 	tools/build-v8.sh $(V8_ARCH)
