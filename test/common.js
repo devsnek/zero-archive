@@ -112,6 +112,30 @@ export function assertDeepEqual(expected, actual) {
   }
 }
 
+const mustCalls = new Map();
+
+export function mustCall(fn) {
+  const wrap = (...args) => {
+    mustCalls.delete(wrap);
+    return fn(...args);
+  };
+  mustCalls.set(wrap, fn);
+}
+
+const error = (...args) => {
+  console.error(...args);
+  const { exit } = new DynamicLibrary(null, { exit: ['void', ['int']] });
+  exit(1);
+};
+
 global.addEventListener('exit', () => {
-  assertEqual(knownGlobals, Object.getOwnPropertyNames(global));
+  const unexpectedGlobals = Object.getOwnPropertyNames(global)
+    .filter((g) => !knownGlobals.includes(g));
+  if (unexpectedGlobals.length) {
+    error('unexpected globals', unexpectedGlobals);
+  }
+
+  [...mustCalls].forEach(([, fn]) => {
+    error('function was uncalled', fn, fn.toString());
+  });
 });
