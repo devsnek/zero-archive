@@ -40,16 +40,58 @@ v8::MaybeLocal<v8::Value> Internal(
   return v8::MaybeLocal<v8::Value>();
 }
 
-static void Exposed(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  v8::Isolate* isolate = info.GetIsolate();
+static void Exposed(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::Isolate* isolate = args.GetIsolate();
 
   v8::Local<v8::Value> val;
-  if (Internal(isolate, info[0].As<v8::String>(), info[1].As<v8::String>()).ToLocal(&val))
-    info.GetReturnValue().Set(val);
+  if (Internal(isolate, args[0].As<v8::String>(), args[1].As<v8::String>()).ToLocal(&val)) {
+    args.GetReturnValue().Set(val);
+  }
+}
+
+static void CreateFunction(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+  v8::Local<v8::String> name = args[0].As<v8::String>();
+  v8::Local<v8::String> code = args[1].As<v8::String>();
+  v8::Local<v8::Array> params = args[2].As<v8::Array>();
+  v8::Local<v8::Array> extensions = args[3].As<v8::Array>();
+
+  v8::ScriptOrigin origin(name);
+  v8::ScriptCompiler::Source source(code, origin);
+
+  v8::TryCatch try_catch(isolate);
+  v8::Context::Scope scope(context);
+
+  v8::Local<v8::String>* cparams = Malloc<v8::Local<v8::String>>(params->Length());
+  for (uint32_t i = 0; i < params->Length(); i += 1) {
+    cparams[i] = params->Get(context, i).ToLocalChecked().As<v8::String>();
+  }
+
+  v8::Local<v8::Object>* cextensions = Malloc<v8::Local<v8::Object>>(extensions->Length());
+  for (uint32_t i = 0; i < extensions->Length(); i += 1) {
+    cextensions[i] = extensions->Get(context, i).ToLocalChecked().As<v8::Object>();
+  }
+
+  v8::MaybeLocal<v8::Function> maybe_fn = v8::ScriptCompiler::CompileFunctionInContext(
+      context, &source, params->Length(), cparams, extensions->Length(), cextensions);
+
+  free(cparams);
+  free(cextensions);
+
+  v8::Local<v8::Function> fn;
+  if (maybe_fn.IsEmpty() || !maybe_fn.ToLocal(&fn)) {
+    try_catch.ReThrow();
+    return;
+  }
+
+  args.GetReturnValue().Set(fn);
 }
 
 void Init(v8::Local<v8::Context> context, v8::Local<v8::Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "run", Exposed);
+  ZERO_SET_PROPERTY(context, exports, "createFunction", CreateFunction);
 }
 
 }  // namespace ScriptWrap
