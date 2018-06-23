@@ -12,7 +12,8 @@ cache:
 install:
   - brew outdated icu4c || brew upgrade icu4c
   - brew link icu4c --force
-  - npm i -g eslint babel-eslint eslint-config-airbnb eslint-plugin-import eslint-plugin-react eslint-plugin-jsx-a11y
+  - npx install-peerdeps --dev eslint-config-airbnb
+  - npm i babel-eslint
 
 script:
   - ./configure --expose-binding

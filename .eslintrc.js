@@ -8,9 +8,6 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2018,
     sourceType: 'script',
-    ecmaFeatures: {
-      experimentalObjectRestSpread: true,
-    },
   },
   env: {
     es6: true,
@@ -35,6 +32,9 @@ module.exports = {
     'no-unused-expressions': 'off',
     'consistent-return': 'off',
     'no-continue': 'off',
+    'operator-linebreak': ['error', 'after'],
+    'implicit-arrow-linebreak': 'off',
+    'react/no-this-in-sfc': 'off',
   },
   globals: {
     WebAssembly: false,
