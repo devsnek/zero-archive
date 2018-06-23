@@ -49,6 +49,18 @@ static void Exposed(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 }
 
+static void FunctionCacheCallback(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::Local<v8::Function> that = args.This().As<v8::Function>();
+  std::unique_ptr<v8::ScriptCompiler::CachedData> cached_data(
+      v8::ScriptCompiler::CreateCodeCacheForFunction(that));
+
+  v8::Local<v8::ArrayBuffer> buf = v8::ArrayBuffer::New(
+      isolate, (void*) cached_data->data, cached_data->length);
+
+  args.GetReturnValue().Set(v8::Uint8Array::New(buf, 0, buf->ByteLength()));
+}
+
 static void CreateFunction(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -85,6 +97,11 @@ static void CreateFunction(const v8::FunctionCallbackInfo<v8::Value>& args) {
     try_catch.ReThrow();
     return;
   }
+
+  fn->Set(
+      context,
+      ZERO_STRING(isolate, "createCodeCache"),
+      v8::Function::New(isolate, FunctionCacheCallback)).ToChecked();
 
   args.GetReturnValue().Set(fn);
 }
