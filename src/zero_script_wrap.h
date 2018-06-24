@@ -1,6 +1,8 @@
 #ifndef SRC_ZERO_SCRIPT_WRAP_H_
 #define SRC_ZERO_SCRIPT_WRAP_H_
 
+#include <memory>
+
 #include "v8.h"
 
 namespace zero {
@@ -55,8 +57,15 @@ static void FunctionCacheCallback(const v8::FunctionCallbackInfo<v8::Value>& arg
   std::unique_ptr<v8::ScriptCompiler::CachedData> cached_data(
       v8::ScriptCompiler::CreateCodeCacheForFunction(that));
 
+  auto data = reinterpret_cast<void*>(Malloc(cached_data->length));
+  memcpy(data, cached_data->data, cached_data->length);
+
   v8::Local<v8::ArrayBuffer> buf = v8::ArrayBuffer::New(
-      isolate, (void*) cached_data->data, cached_data->length);
+      isolate,
+      data,
+      cached_data->length);
+
+  free(data);
 
   args.GetReturnValue().Set(v8::Uint8Array::New(buf, 0, buf->ByteLength()));
 }

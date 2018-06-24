@@ -123,7 +123,7 @@ export function mustCall(fn) {
 }
 
 const error = (...args) => {
-  console.error(...args);
+  console.error(...args); // eslint-disable-line no-console
   const { exit } = new DynamicLibrary(null, { exit: ['void', ['int']] });
   exit(1);
 };
