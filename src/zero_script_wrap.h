@@ -2,6 +2,7 @@
 #define SRC_ZERO_SCRIPT_WRAP_H_
 
 #include <memory>
+#include <vector>
 
 #include "v8.h"
 
@@ -85,21 +86,18 @@ static void CreateFunction(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::TryCatch try_catch(isolate);
   v8::Context::Scope scope(context);
 
-  v8::Local<v8::String>* cparams = Malloc<v8::Local<v8::String>>(params->Length());
+  std::vector<v8::Local<v8::String>> cparams;
   for (uint32_t i = 0; i < params->Length(); i += 1) {
-    cparams[i] = params->Get(context, i).ToLocalChecked().As<v8::String>();
+    cparams.push_back(params->Get(context, i).ToLocalChecked().As<v8::String>());
   }
 
-  v8::Local<v8::Object>* cextensions = Malloc<v8::Local<v8::Object>>(extensions->Length());
+  std::vector<v8::Local<v8::Object>> cextensions;
   for (uint32_t i = 0; i < extensions->Length(); i += 1) {
-    cextensions[i] = extensions->Get(context, i).ToLocalChecked().As<v8::Object>();
+    cextensions.push_back(extensions->Get(context, i).ToLocalChecked().As<v8::Object>());
   }
 
   v8::MaybeLocal<v8::Function> maybe_fn = v8::ScriptCompiler::CompileFunctionInContext(
-      context, &source, params->Length(), cparams, extensions->Length(), cextensions);
-
-  free(cparams);
-  free(cextensions);
+      context, &source, params->Length(), &cparams[0], extensions->Length(), &cextensions[0]);
 
   v8::Local<v8::Function> fn;
   if (maybe_fn.IsEmpty() || !maybe_fn.ToLocal(&fn)) {
