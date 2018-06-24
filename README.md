@@ -23,8 +23,8 @@ Check out the [0.0.1 Release Project][] for info on what needs to be done still.
 
 ### FFI
 
-- `zero.loadDyanmicLibrary(path, functions)`
-  * `path` `{string}` Path to dynamic library. If relative it will be resolved
+- `new DyanmicLibrary(path, functions)`
+  * `path` `{string|URL}` Path to dynamic library. If relative it will be resolved
     to the current working directory.
   * `functions` `{object}` Object of definitions for the exported functions
     from the dynamic library. These definitions take the form:
