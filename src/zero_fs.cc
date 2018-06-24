@@ -215,7 +215,7 @@ void fs_cb(uv_fs_t* req) {
 
 static void Open(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  String::Utf8Value path(isolate, args[0].As<String>());
+  String::Utf8Value path(isolate, args[0]);
   int mode = args[1]->Int32Value();
 
   FS_INIT(isolate, "open", args[2]->IsFalse());
@@ -228,6 +228,14 @@ static void Close(const FunctionCallbackInfo<Value>& args) {
 
   FS_INIT(isolate, "close", args[1]->IsFalse());
   FS_CALL(args, close, req, file);
+}
+
+static void Stat(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  String::Utf8Value path(isolate, args[0]);
+
+  FS_INIT(isolate, "stat", args[1]->IsFalse());
+  FS_CALL(args, stat, req, *path);
 }
 
 static void FStat(const FunctionCallbackInfo<Value>& args) {
@@ -256,6 +264,7 @@ static void Read(const FunctionCallbackInfo<Value>& args) {
 void Init(Local<Context> context, Local<Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "open", Open);
   ZERO_SET_PROPERTY(context, exports, "close", Close);
+  ZERO_SET_PROPERTY(context, exports, "stat", Stat);
   ZERO_SET_PROPERTY(context, exports, "fstat", FStat);
   ZERO_SET_PROPERTY(context, exports, "read", Read);
 
