@@ -37,6 +37,7 @@ module.exports = {
     'react/no-this-in-sfc': 'off',
   },
   globals: {
+    Intl: false,
     WebAssembly: false,
     BigInt: false,
     global: false,
