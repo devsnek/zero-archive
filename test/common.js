@@ -122,11 +122,17 @@ export function mustCall(fn) {
   mustCalls.set(wrap, fn);
 }
 
+export function pass() {}
+
 const error = (...args) => {
   console.trace(...args); // eslint-disable-line no-console
   const { exit } = new DynamicLibrary(null, { exit: ['void', ['int']] });
   exit(1);
 };
+
+export function fail(message) {
+  error(message);
+}
 
 global.addEventListener('exit', () => {
   const unexpectedGlobals = Object.getOwnPropertyNames(global)

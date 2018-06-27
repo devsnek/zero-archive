@@ -347,7 +347,7 @@ MaybeLocal<Promise> ModuleWrap::ImportModuleDynamically(
 
   if (host_defined_options->Length() == 2) {
     int type = host_defined_options->Get(0).As<Integer>()->Value();
-    if (type == 1) {
+    if (type == 0) {
       int id = host_defined_options->Get(1).As<Integer>()->Value();
       Local<UnboundScript> s = GetScriptFromID(iso, id);
       CHECK(!s.IsEmpty());
