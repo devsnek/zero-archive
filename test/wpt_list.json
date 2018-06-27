@@ -1,5 +1,6 @@
 [
   "user-timing/user_timing_exists.any.js",
   "hr-time/monotonic-clock.any.js",
-  "hr-time/basic.any.js"
+  "hr-time/basic.any.js",
+  "performance-timeline/webtiming-resolution.any.js"
 ]
