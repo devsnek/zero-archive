@@ -17,9 +17,6 @@ class ModuleWrap : public BaseObject {
       v8::Local<v8::Context> context,
       v8::Local<v8::Module> module,
       v8::Local<v8::Object> meta);
-  static ModuleWrap* GetFromID(int);
-
-  inline int GetID() { return id_; }
 
  private:
   ModuleWrap(v8::Isolate* isolate,
@@ -55,9 +52,6 @@ class ModuleWrap : public BaseObject {
   static v8::Persistent<v8::Function> host_initialize_import_meta_object_callback;
   static v8::Persistent<v8::Function> host_import_module_dynamically_callback;
 
-  static int Identity_;
-
-  int id_;
   v8::Persistent<v8::Module> module_;
   bool linked_ = false;
   std::unordered_map<std::string, v8::Persistent<v8::Promise>> resolve_cache_;

@@ -255,7 +255,7 @@ int main(int process_argc, char** process_argv) {
 
     TryCatch try_catch(isolate);
 
-    MaybeLocal<Value> zero_fn_maybe = zero::ScriptWrap::Internal(
+    MaybeLocal<Value> zero_fn_maybe = zero::ScriptWrap::Run(
         isolate, ZERO_STRING(isolate, "zero"),
         zero::blobs::MainSource(isolate));
 
@@ -283,8 +283,6 @@ int main(int process_argc, char** process_argv) {
     if (try_catch.HasCaught())
       zero::errors::ReportException(isolate, &try_catch);
   }
-
-  zero::id_to_script_map.clear();
 
   zero::platform->UnregisterIsolate(isolate);
   isolate->Dispose();

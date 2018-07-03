@@ -267,9 +267,7 @@ namespace loader {
 class ModuleWrap;
 }
 
-static std::unordered_map<int, loader::ModuleWrap*> id_to_module_wrap_map;
-static std::unordered_multimap<int, loader::ModuleWrap*> module_to_module_wrap_map;
-static std::unordered_map<int, v8::Global<v8::UnboundScript>> id_to_script_map;
+static std::unordered_multimap<uint32_t, loader::ModuleWrap*> module_to_module_wrap_map;
 
 class InternalCallbackScope {
  public:
