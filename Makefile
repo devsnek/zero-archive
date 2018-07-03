@@ -99,7 +99,7 @@ LIBS = $(LIBUV) $(LIBFFI)
 
 INCLUDES = -Ideps/v8/include -Ideps/libuv/include -Ideps/libffi/build_out/include
 
-out/zero: $(LIBS) $(CFLIES) $(HFILES) out/zero_blobs.cc | out $(V8)
+out/zero: $(LIBS) $(CFLIES) $(HFILES) $(V8) out/zero_blobs.cc | out
 	$(CC) $(CFLAGS) $(INCLUDES) $(V8) $(LIBS) $(ICU) $(CFILES) out/zero_blobs.cc -o $@
 
 $(V8):
