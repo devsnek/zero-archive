@@ -25,7 +25,7 @@ static void Now(const FunctionCallbackInfo<Value>& args) {
   double now = static_cast<double>(now64) / NS_PER_MS;
 
   // decrease precision for wpt/performance-timeline/webtiming-resolution.any.js
-  now = floor(now / 10) * 10;
+  now = floor(now * 10) / 10;
 
   args.GetReturnValue().Set(v8::Number::New(isolate, now));
 }
