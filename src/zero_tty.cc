@@ -18,6 +18,8 @@ using v8::Isolate;
 using v8::Local;
 using v8::MaybeLocal;
 using v8::Object;
+using v8::Persistent;
+using v8::Promise;
 using v8::String;
 using v8::TryCatch;
 using v8::Value;
@@ -25,6 +27,11 @@ using v8::Value;
 static void alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
   *buf = uv_buf_init(Malloc(suggested_size), suggested_size);
 }
+
+struct tty_write_req {
+  Isolate* isolate;
+  Persistent<Promise::Resolver> resolver;
+};
 
 class TTYWrap : public BaseObject {
  public:
@@ -80,7 +87,7 @@ class TTYWrap : public BaseObject {
 
   static void Write(const FunctionCallbackInfo<Value>& args) {
     Isolate* isolate = args.GetIsolate();
-    InternalCallbackScope callback_scope(isolate);
+    Local<Context> context = isolate->GetCurrentContext();
 
     TTYWrap* obj;
     ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
@@ -98,12 +105,21 @@ class TTYWrap : public BaseObject {
       },
     };
 
-    uv_write_t* req = new uv_write_t;
-    // req->data = data;
+    Local<Promise::Resolver> promise = Promise::Resolver::New(context).ToLocalChecked();
+
+    auto req = new uv_write_t;
+    auto tty_req = new tty_write_req{isolate};
+    tty_req->resolver.Reset(isolate, promise);
+    req->data = tty_req;
     uv_write(req, reinterpret_cast<uv_stream_t*>(&obj->handle_), buf, 1, [](uv_write_t* req, int) {
-      // delete reinterpret_cast<char*>(req->data);
+      auto data = reinterpret_cast<tty_write_req*>(req->data);
+      InternalCallbackScope callback_scope(data->isolate);
+      data->resolver.Get(data->isolate)->Resolve(v8::Undefined(data->isolate));
+      delete data;
       delete req;
     });
+
+    args.GetReturnValue().Set(promise->GetPromise());
   }
 
   static void SetBlocking(const FunctionCallbackInfo<Value>& args) {
