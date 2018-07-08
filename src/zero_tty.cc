@@ -7,6 +7,8 @@
 namespace zero {
 namespace tty {
 
+using v8::ArrayBuffer;
+using v8::ArrayBufferView;
 using v8::Context;
 using v8::Function;
 using v8::FunctionCallbackInfo;
@@ -83,21 +85,34 @@ class TTYWrap : public BaseObject {
     TTYWrap* obj;
     ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
 
-    String::Utf8Value* utf8 = new String::Utf8Value(isolate, args[0]);
+    CHECK(args[0]->IsArrayBufferView());
+
+    Local<ArrayBufferView> ui = args[0].As<ArrayBufferView>();
+    ArrayBuffer::Contents ab_c = ui->Buffer()->GetContents();
+    char* data = static_cast<char*>(ab_c.Data()) + ui->ByteOffset();
 
     uv_buf_t buf[] = {
       {
-        .base = reinterpret_cast<char*>(**utf8),
-        .len = static_cast<size_t>(utf8->length()),
+        .base = data,
+        .len = static_cast<size_t>(ab_c.ByteLength()),
       },
     };
 
     uv_write_t* req = new uv_write_t;
-    req->data = utf8;
+    // req->data = data;
     uv_write(req, reinterpret_cast<uv_stream_t*>(&obj->handle_), buf, 1, [](uv_write_t* req, int) {
-      delete reinterpret_cast<String::Utf8Value*>(req->data);
+      // delete reinterpret_cast<char*>(req->data);
       delete req;
     });
+  }
+
+  static void SetBlocking(const FunctionCallbackInfo<Value>& args) {
+    TTYWrap* obj;
+    ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
+
+    uv_stream_set_blocking(
+        reinterpret_cast<uv_stream_t*>(&obj->handle_),
+        args[0]->IsTrue());
   }
 
   static void End(const FunctionCallbackInfo<Value>& args) {
@@ -118,6 +133,7 @@ void Init(Local<Context> context, Local<Object> target) {
 
   ZERO_SET_PROTO_PROP(context, tpl, "write", TTYWrap::Write);
   ZERO_SET_PROTO_PROP(context, tpl, "end", TTYWrap::End);
+  ZERO_SET_PROTO_PROP(context, tpl, "setBlocking", TTYWrap::SetBlocking);
 
   target->Set(ZERO_STRING(isolate, "TTYWrap"), tpl->GetFunction());
 }
