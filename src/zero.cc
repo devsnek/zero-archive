@@ -172,20 +172,33 @@ int main(int process_argc, char** process_argv) {
   char** argv = zero::Malloc<char*>(process_argc + v8_argc);
   argv[0] = process_argv[0];  // grab argv0 which is the process
   int argc = 1;
+  int pick_up_double_dash = -1;
 
   for (int i = 0; i < v8_argc; i += 1) {
     argv[argc++] = const_cast<char*>(v8_argv[i]);
   }
   for (int i = 1; i < process_argc; i += 1) {
-    argv[argc++] = process_argv[i];
+    char* arg = process_argv[i];
+    // V8 can't handle double-dash
+    if (strcmp(arg, "--") == 0) {
+      pick_up_double_dash = i;
+      break;
+    }
+    argv[argc++] = arg;
   }
-  argv[argc++] = 0;
+  argv[argc] = 0;
 
   v8::V8::InitializeICU();
 
   V8::SetFlagsFromCommandLine(&argc, const_cast<char**>(argv), true);
-  // argv and argc have been modified to include arguments
-  // not used by V8
+  // argv and argc have been modified to include arguments not used by V8
+
+  if (pick_up_double_dash != -1) {
+    for (int i = pick_up_double_dash; i < process_argc; i += 1) {
+      argv[argc++] = process_argv[i];
+    }
+    argv[argc] = 0;
+  }
 
   zero::platform = new zero::ZeroPlatform(4);
   V8::InitializePlatform(zero::platform);
