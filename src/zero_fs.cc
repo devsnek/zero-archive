@@ -4,6 +4,7 @@
 #include "v8.h"
 #include "zero.h"
 
+using v8::Array;
 using v8::BigInt;
 using v8::Context;
 using v8::FunctionCallbackInfo;
@@ -89,9 +90,10 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
     case UV_FS_LSTAT:
     case UV_FS_FSTAT: {
       const uv_stat_t* s = &req->statbuf;
-      Local<Object> table = Object::New(isolate);
+      Local<Array> table = Array::New(isolate);
+      int i = 0;
 #define V(name) \
-      USE(table->Set(context, ZERO_STRING(isolate, #name), v8::Integer::New(isolate, s->st_##name)))
+      USE(table->Set(context, i++, v8::Integer::New(isolate, s->st_##name)))
       V(dev);
       V(mode);
       V(nlink);
@@ -106,8 +108,8 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       V(gen);
 #undef V
 #define V(name) \
-      USE(table->Set(context, ZERO_STRING(isolate, #name), v8::Integer::New(isolate,              \
-                     (int64_t) (s->st_##name.tv_sec * 1000000000) + s->st_##name.tv_nsec)));
+      USE(table->Set(context, i++, v8::BigInt::New(isolate, s->st_##name.tv_sec))); \
+      USE(table->Set(context, i++, v8::BigInt::New(isolate, s->st_##name.tv_nsec)));
       V(atim);
       V(mtim);
       V(ctim);
@@ -270,16 +272,22 @@ void Init(Local<Context> context, Local<Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "read", Read);
 
 #define V(n) ZERO_SET_PROPERTY(context, exports, #n, n);
-  V(O_RDONLY);
-  V(O_WRONLY);
-  V(O_RDWR);
-  V(O_APPEND);
-#ifdef O_SYNC
-  V(O_SYNC);
-#endif
-  V(O_CREAT);
-  V(O_TRUNC);
-  V(O_EXCL);
+  V(O_APPEND)
+  V(O_CREAT)
+  V(O_EXCL)
+  V(O_RDONLY)
+  V(O_RDWR)
+  V(O_SYNC)
+  V(O_TRUNC)
+  V(O_WRONLY)
+  V(S_IFBLK)
+  V(S_IFCHR)
+  V(S_IFDIR)
+  V(S_IFIFO)
+  V(S_IFLNK)
+  V(S_IFMT)
+  V(S_IFREG)
+  V(S_IFSOCK)
 #undef V
 }
 
