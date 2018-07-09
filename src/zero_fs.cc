@@ -144,8 +144,9 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
       return v8::String::NewFromUtf8(isolate, reinterpret_cast<char*>(req->ptr));
 
     case UV_FS_READ:
-      return v8::String::NewFromUtf8(isolate, (const char*) data->data(),
-          String::NewStringType::kNormalString, req->result);
+      return v8::Uint8Array::New(
+          v8::ArrayBuffer::New(isolate, (char*) data->data(), req->result),
+          0, req->result);
 
     case UV_FS_SCANDIR:
       // Expose the userdata for the request.

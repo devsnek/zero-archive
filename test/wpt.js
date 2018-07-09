@@ -1,28 +1,3 @@
-const fs = do {
-  const {
-    open, fstat, read, close,
-    O_RDONLY,
-  } = binding('fs');
-
-  ({
-    readFile: async (path) => {
-      let fd;
-      try {
-        fd = await open(path, O_RDONLY);
-        const { size } = await fstat(fd);
-        const buffer = await read(fd, size, -1);
-        return buffer;
-      } catch (e) {
-        throw new Error(e.message);
-      } finally {
-        if (fd !== undefined) {
-          await close(fd);
-        }
-      }
-    },
-  });
-};
-
 const ScriptWrap = binding('script_wrap');
 
 global.Worker = class {};
@@ -30,16 +5,20 @@ global.SharedWorker = class {};
 
 global.fetch_tests_from_worker = () => {};
 
+const fetchDecoder = new TextDecoder('utf8');
 global.fetch = async (url) => {
-  const source = await fs.readFile(`./test/web-platform-tests${url}`);
+  const source = await FileSystem.readFile(`./test/web-platform-tests${url}`);
   return {
-    text: () => source,
+    text: () => fetchDecoder.decode(source),
   };
 };
 
 new Promise((resolve, reject) => {
   (async () => {
-    const harness = await fs.readFile('./test/web-platform-tests/resources/testharness.js');
+    const harness = await FileSystem.readFile(
+      './test/web-platform-tests/resources/testharness.js',
+      { encoding: 'utf8' },
+    );
     ScriptWrap.run('testharness.js', harness);
 
     const fail = reject;
@@ -69,7 +48,7 @@ new Promise((resolve, reject) => {
     });
 
     const target = environment.argv[1];
-    const source = await fs.readFile(target);
+    const source = await FileSystem.readFile(target, { encoding: 'utf8' });
 
     // assign global.self late to trick wpt into
     // thinking this is a shell environment
