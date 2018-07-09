@@ -69,7 +69,7 @@ export function deepEqual(a, b) {
     return false;
   }
 
-  if (aTag === '[object Array]') {
+  if (aTag === '[object Array]' || aTag === '[object Uint8Array]') {
     if (a.length !== b.length) {
       return false;
     }
@@ -133,6 +133,8 @@ const error = (...args) => {
 export function fail(message) {
   error(message);
 }
+
+export const fixtures = `${new URL('fixtures/', import.meta.url)}`;
 
 global.addEventListener('exit', () => {
   const unexpectedGlobals = Object.getOwnPropertyNames(global)
