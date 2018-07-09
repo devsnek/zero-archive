@@ -145,7 +145,7 @@ class Decoder : public BaseObject {
                    nullptr, flush, &status);
 
     if (U_SUCCESS(status)) {
-      uint16_t* data = reinterpret_cast<uint16_t*>(result);
+      auto data = reinterpret_cast<uint16_t*>(result);
       if (IsBigEndian()) {
         uint16_t temp;
         for (size_t i = 0; i < limit; i += sizeof(temp)) {
@@ -155,7 +155,7 @@ class Decoder : public BaseObject {
         }
       }
       MaybeLocal<String> s =
-        String::NewFromTwoByte(isolate, data, v8::NewStringType::kNormal, limit);
+        String::NewFromTwoByte(isolate, data, v8::NewStringType::kNormal, target - result);
       args.GetReturnValue().Set(s.ToLocalChecked());
     } else {
       args.GetReturnValue().Set(status);

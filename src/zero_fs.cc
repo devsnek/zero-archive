@@ -145,7 +145,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
 
     case UV_FS_READ:
       return v8::Uint8Array::New(
-          v8::ArrayBuffer::New(isolate, (char*) data->data(), req->result),
+          v8::ArrayBuffer::New(isolate, reinterpret_cast<char*>(data->data()), req->result),
           0, req->result);
 
     case UV_FS_SCANDIR:
