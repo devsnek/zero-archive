@@ -22,25 +22,22 @@ using v8::Value;
 namespace zero {
 namespace fs {
 
-class zeroReq {
+class ZeroReq {
  public:
-  explicit zeroReq(Isolate* isolate,
+  explicit ZeroReq(Isolate* isolate,
                    const char* type,
-                   bool sync = false,
                    void* data = nullptr) :
     isolate_(isolate),
     type_(const_cast<char*>(type)),
-    sync_(sync),
     data_(data) {}
 
-  ~zeroReq() {
+  ~ZeroReq() {
     isolate_ = nullptr;
     resolver_.Reset();
   }
 
   inline Isolate* isolate() const { return isolate_; }
   inline char* type() const { return type_; }
-  inline bool sync() const { return sync_; }
   inline void* data() const { return data_; }
   inline void resolver(Local<Promise::Resolver> r) {
     resolver_.Reset(isolate_, r);
@@ -52,7 +49,6 @@ class zeroReq {
  private:
   Isolate* isolate_;
   char* type_;
-  bool sync_;
   void* data_;
   Persistent<Promise::Resolver> resolver_;
 };
@@ -61,7 +57,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
   if (req->fs_type == UV_FS_ACCESS)
     return v8::Boolean::New(isolate, req->result >= 0);
 
-  zeroReq* data = reinterpret_cast<zeroReq*>(req->data);
+  auto data = reinterpret_cast<ZeroReq*>(req->data);
   Local<Context> context = isolate->GetCurrentContext();
 
   switch (req->fs_type) {
@@ -171,7 +167,7 @@ const char* makeErrMessage(const char* type, int result) {
 }
 
 void fs_cb(uv_fs_t* req) {
-  zeroReq* data = reinterpret_cast<zeroReq*>(req->data);
+  auto data = reinterpret_cast<ZeroReq*>(req->data);
   Isolate* isolate = data->isolate();
   Local<Context> context = isolate->GetCurrentContext();
   InternalCallbackScope callback_scope(isolate);
@@ -190,20 +186,14 @@ void fs_cb(uv_fs_t* req) {
   delete req;
 }
 
-#define FS_CALL(args, func, req, ...) {                                       \
-  zeroReq* data = reinterpret_cast<zeroReq*>(req->data);                      \
-  int ret = uv_fs_##func(uv_default_loop(), req, __VA_ARGS__, data->sync() ? NULL : fs_cb); \
+#define FS_CALL(func, args, oobData, ...) {                                   \
+  ZeroReq* data = new ZeroReq(args.GetIsolate(), #func, oobData);             \
+  uv_fs_t* req = new uv_fs_t;                                                 \
+  req->data = data;                                                           \
+  int ret = uv_fs_##func(uv_default_loop(), req, __VA_ARGS__, fs_cb);         \
   Isolate* isolate = args.GetIsolate();                                       \
   if (req->fs_type != UV_FS_ACCESS && ret < 0) {                              \
     ZERO_THROW_EXCEPTION(isolate, makeErrMessage(data->type(), req->result)); \
-    delete data;                                                              \
-    delete req;                                                               \
-  } else if (data->sync()) {                                                  \
-    Local<Value> v = normalize_req(isolate, req);                             \
-    if (v->IsNativeError())                                                   \
-      isolate->ThrowException(v);                                             \
-    else                                                                      \
-      args.GetReturnValue().Set(v);                                           \
     delete data;                                                              \
     delete req;                                                               \
   } else {                                                                    \
@@ -213,48 +203,35 @@ void fs_cb(uv_fs_t* req) {
   }                                                                           \
 }
 
-#define FS_INIT(...)                                                          \
-  zeroReq* data = new zeroReq(__VA_ARGS__);                                   \
-  uv_fs_t* req = new uv_fs_t;                                                 \
-  req->data = data;
-
 static void Open(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   String::Utf8Value path(isolate, args[0]);
   int flags = args[1]->Int32Value();
   int mode = args[2]->Int32Value();
 
-  FS_INIT(isolate, "open", args[3]->IsFalse());
-  FS_CALL(args, open, req, *path, flags, mode);
+  FS_CALL(open, args, nullptr, *path, flags, mode);
 }
 
 static void Close(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
   uv_file file = args[0]->Int32Value();
 
-  FS_INIT(isolate, "close", args[1]->IsFalse());
-  FS_CALL(args, close, req, file);
+  FS_CALL(close, args, nullptr, file);
 }
 
 static void Stat(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   String::Utf8Value path(isolate, args[0]);
 
-  FS_INIT(isolate, "stat", args[1]->IsFalse());
-  FS_CALL(args, stat, req, *path);
+  FS_CALL(stat, args, nullptr, *path);
 }
 
 static void FStat(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
   uv_file file = args[0]->Int32Value();
 
-  FS_INIT(isolate, "fstat", args[1]->IsFalse());
-  FS_CALL(args, fstat, req, file);
+  FS_CALL(fstat, args, nullptr, file);
 }
 
 static void Read(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-
   uv_file file = args[0]->Uint32Value();
   int64_t len = args[1]->IntegerValue();
   int64_t offset = args[2]->IntegerValue();
@@ -263,13 +240,10 @@ static void Read(const FunctionCallbackInfo<Value>& args) {
 
   uv_buf_t buf = uv_buf_init(buffer, len);
 
-  FS_INIT(isolate, "read", args[3]->IsFalse(), buf.base);
-  FS_CALL(args, read, req, file, &buf, 1, offset);
+  FS_CALL(read, args, buf.base, file, &buf, 1, offset);
 }
 
 static void Write(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-
   uv_file file = args[0]->Uint32Value();
   int64_t offset = args[1]->IntegerValue();
 
@@ -284,8 +258,7 @@ static void Write(const FunctionCallbackInfo<Value>& args) {
     },
   };
 
-  FS_INIT(isolate, "write", args[3]->IsFalse(), base);
-  FS_CALL(args, write, req, file, buf, 1, offset);
+  FS_CALL(write, args, nullptr, file, buf, 1, offset);
 }
 
 void Init(Local<Context> context, Local<Object> exports) {
