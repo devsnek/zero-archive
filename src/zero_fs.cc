@@ -5,6 +5,8 @@
 #include "zero.h"
 
 using v8::Array;
+using v8::ArrayBuffer;
+using v8::ArrayBufferView;
 using v8::BigInt;
 using v8::Context;
 using v8::FunctionCallbackInfo;
@@ -147,7 +149,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
 
     case UV_FS_READ:
       return v8::Uint8Array::New(
-          v8::ArrayBuffer::New(isolate, reinterpret_cast<char*>(data->data()), req->result),
+          ArrayBuffer::New(isolate, reinterpret_cast<char*>(data->data()), req->result),
           0, req->result);
 
     case UV_FS_SCANDIR:
@@ -219,10 +221,11 @@ void fs_cb(uv_fs_t* req) {
 static void Open(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   String::Utf8Value path(isolate, args[0]);
-  int mode = args[1]->Int32Value();
+  int flags = args[1]->Int32Value();
+  int mode = args[2]->Int32Value();
 
-  FS_INIT(isolate, "open", args[2]->IsFalse());
-  FS_CALL(args, open, req, *path, mode, 0);
+  FS_INIT(isolate, "open", args[3]->IsFalse());
+  FS_CALL(args, open, req, *path, flags, mode);
 }
 
 static void Close(const FunctionCallbackInfo<Value>& args) {
@@ -252,16 +255,37 @@ static void FStat(const FunctionCallbackInfo<Value>& args) {
 static void Read(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
-  uv_file file = args[0]->Int32Value();
+  uv_file file = args[0]->Uint32Value();
   int64_t len = args[1]->IntegerValue();
-  int64_t offset = args[2]->Int32Value();
+  int64_t offset = args[2]->IntegerValue();
 
-  char* buffer = reinterpret_cast<char*>(malloc(len));
+  char* buffer = Malloc(len);
 
   uv_buf_t buf = uv_buf_init(buffer, len);
 
   FS_INIT(isolate, "read", args[3]->IsFalse(), buf.base);
   FS_CALL(args, read, req, file, &buf, 1, offset);
+}
+
+static void Write(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+
+  uv_file file = args[0]->Uint32Value();
+  int64_t offset = args[1]->IntegerValue();
+
+  Local<ArrayBufferView> ui = args[2].As<ArrayBufferView>();
+  ArrayBuffer::Contents ab_c = ui->Buffer()->GetContents();
+  auto base = static_cast<char*>(ab_c.Data()) + ui->ByteOffset();
+
+  uv_buf_t buf[] = {
+    {
+      .base = base,
+      .len = static_cast<size_t>(ab_c.ByteLength()),
+    },
+  };
+
+  FS_INIT(isolate, "write", args[3]->IsFalse(), base);
+  FS_CALL(args, write, req, file, buf, 1, offset);
 }
 
 void Init(Local<Context> context, Local<Object> exports) {
@@ -270,6 +294,7 @@ void Init(Local<Context> context, Local<Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "stat", Stat);
   ZERO_SET_PROPERTY(context, exports, "fstat", FStat);
   ZERO_SET_PROPERTY(context, exports, "read", Read);
+  ZERO_SET_PROPERTY(context, exports, "write", Write);
 
 #define V(n) ZERO_SET_PROPERTY(context, exports, #n, n);
   V(O_APPEND)
