@@ -1,7 +1,7 @@
-import { pass, fail, assertEqual } from '../common';
+import { pass, fail, assertEqual, fixtures } from '../common';
 
 const content = 'HELLO ZERO';
-const path = '/tmp/zero_test.txt';
+const path = new URL('fs_write_output.txt', fixtures);
 
 fileSystem.writeFile(path, content)
   .then(async () => {

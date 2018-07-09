@@ -5,3 +5,4 @@ out
 *.dSYM
 *.dylib
 *.shared
+test/fixtures/fs_write_output.txt
