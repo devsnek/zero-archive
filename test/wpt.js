@@ -18,7 +18,7 @@ global.fetch = async (url) => {
 new Promise((resolve, reject) => {
   (async () => {
     const harness = await readFile(
-      './test/web-platform-tests/resources/testharness.js',
+      new URL('web-platform-tests/resources/testharness.js', import.meta.url),
       { encoding: 'utf8' },
     );
     ScriptWrap.run('testharness.js', harness);

@@ -29,7 +29,9 @@ class ZeroReq {
                    void* data = nullptr) :
     isolate_(isolate),
     type_(const_cast<char*>(type)),
-    data_(data) {}
+    data_(data) {
+      resolver_.Reset(isolate_, Promise::Resolver::New(isolate_));
+    }
 
   ~ZeroReq() {
     isolate_ = nullptr;
@@ -39,11 +41,29 @@ class ZeroReq {
   inline Isolate* isolate() const { return isolate_; }
   inline char* type() const { return type_; }
   inline void* data() const { return data_; }
-  inline void resolver(Local<Promise::Resolver> r) {
-    resolver_.Reset(isolate_, r);
-  }
   inline Local<Promise::Resolver> resolver() const {
     return resolver_.Get(isolate_);
+  }
+  inline Local<Promise> promise() {
+    return resolver_.Get(isolate_)->GetPromise();
+  }
+
+  inline void finish(Local<Value> v) {
+    v8::HandleScope scope(isolate_);
+    Local<Context> context = isolate_->GetCurrentContext();
+    if (v->IsNativeError()) {
+      resolver()->Reject(context, v).ToChecked();
+    } else {
+      resolver()->Resolve(context, v).ToChecked();
+    }
+  }
+
+  inline void fail(int err) {
+    std::string e = type();
+    e += ": ";
+    e += uv_strerror(err);
+    Local<Value> v = v8::Exception::Error(ZERO_STRING(isolate_, e.c_str()));
+    finish(v);
   }
 
  private:
@@ -148,39 +168,37 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
           ArrayBuffer::New(isolate, reinterpret_cast<char*>(data->data()), req->result),
           0, req->result);
 
-    case UV_FS_SCANDIR:
-      // Expose the userdata for the request.
-      // lua_rawgeti(L, LUA_REGISTRYINDEX, data->req_ref);
-      // return 1;
-      return v8::Integer::New(isolate, -1);
+    case UV_FS_SCANDIR: {
+      Local<Array> table = Array::New(isolate, 0);
+      for (int i = 0; ; i += 1) {
+        uv_dirent_t ent;
+        int r = uv_fs_scandir_next(req, &ent);
+        if (r == UV_EOF) {
+          break;
+        }
+        if (r != 0) {
+          return v8::Exception::Error(ZERO_STRING(isolate, "scandir error"));
+        }
+        Local<String> name = String::NewFromUtf8(isolate, ent.name);
+        table->Set(context, i, name).ToChecked();
+      }
+      return table;
+    }
 
     default:
       return v8::Exception::Error(ZERO_STRING(isolate, "UNKNOWN FS TYPE"));
   }
 }
 
-const char* makeErrMessage(const char* type, int result) {
-  std::string e = type;
-  e += ": ";
-  e += uv_strerror(result);
-  return e.c_str();
-}
-
 void fs_cb(uv_fs_t* req) {
   auto data = reinterpret_cast<ZeroReq*>(req->data);
   Isolate* isolate = data->isolate();
-  Local<Context> context = isolate->GetCurrentContext();
   InternalCallbackScope callback_scope(isolate);
   if (req->fs_type != UV_FS_ACCESS && req->result < 0) {
-    Local<Value> e = v8::Exception::Error(
-        ZERO_STRING(isolate, makeErrMessage(data->type(), req->result)));
-    USE(data->resolver()->Reject(context, e));
+    data->fail(req->result);
   } else {
     Local<Value> v = normalize_req(isolate, req);
-    if (v->IsNativeError())
-      USE(data->resolver()->Reject(context, v));
-    else
-      USE(data->resolver()->Resolve(context, v));
+    data->finish(v);
   }
   delete data;
   delete req;
@@ -190,16 +208,12 @@ void fs_cb(uv_fs_t* req) {
   ZeroReq* data = new ZeroReq(args.GetIsolate(), #func, oobData);             \
   uv_fs_t* req = new uv_fs_t;                                                 \
   req->data = data;                                                           \
+  args.GetReturnValue().Set(data->promise());                                 \
   int ret = uv_fs_##func(uv_default_loop(), req, __VA_ARGS__, fs_cb);         \
-  Isolate* isolate = args.GetIsolate();                                       \
   if (req->fs_type != UV_FS_ACCESS && ret < 0) {                              \
-    ZERO_THROW_EXCEPTION(isolate, makeErrMessage(data->type(), req->result)); \
+    data->fail(req->result);                                                  \
     delete data;                                                              \
     delete req;                                                               \
-  } else {                                                                    \
-    Local<Promise::Resolver> resolver = Promise::Resolver::New(isolate);      \
-    data->resolver(resolver);                                                 \
-    args.GetReturnValue().Set(resolver->GetPromise());                        \
   }                                                                           \
 }
 
@@ -261,6 +275,20 @@ static void Write(const FunctionCallbackInfo<Value>& args) {
   FS_CALL(write, args, nullptr, file, buf, 1, offset);
 }
 
+static void Scandir(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  String::Utf8Value path(isolate, args[0]);
+
+  FS_CALL(scandir, args, nullptr, *path, 0);
+}
+
+static void Realpath(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  String::Utf8Value path(isolate, args[0]);
+
+  FS_CALL(realpath, args, nullptr, *path);
+}
+
 void Init(Local<Context> context, Local<Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "open", Open);
   ZERO_SET_PROPERTY(context, exports, "close", Close);
@@ -268,6 +296,8 @@ void Init(Local<Context> context, Local<Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "fstat", FStat);
   ZERO_SET_PROPERTY(context, exports, "read", Read);
   ZERO_SET_PROPERTY(context, exports, "write", Write);
+  ZERO_SET_PROPERTY(context, exports, "scandir", Scandir);
+  ZERO_SET_PROPERTY(context, exports, "realpath", Realpath);
 
 #define V(n) ZERO_SET_PROPERTY(context, exports, #n, n);
   V(O_APPEND)
