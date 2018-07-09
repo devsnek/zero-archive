@@ -1,6 +1,6 @@
 import { pass, fail, assertEqual, fixtures } from '../common';
 
-FileSystem.stat(new URL('hello.txt', fixtures))
+fileSystem.stat(new URL('hello.txt', fixtures))
   .then((stats) => {
     assertEqual(stats.isDir, false);
     assertEqual(stats.isSymlink, false);

@@ -5,9 +5,11 @@ global.SharedWorker = class {};
 
 global.fetch_tests_from_worker = () => {};
 
+const { readFile } = fileSystem;
+
 const fetchDecoder = new TextDecoder('utf8');
 global.fetch = async (url) => {
-  const source = await FileSystem.readFile(`./test/web-platform-tests${url}`);
+  const source = await readFile(`./test/web-platform-tests${url}`);
   return {
     text: () => fetchDecoder.decode(source),
   };
@@ -15,7 +17,7 @@ global.fetch = async (url) => {
 
 new Promise((resolve, reject) => {
   (async () => {
-    const harness = await FileSystem.readFile(
+    const harness = await readFile(
       './test/web-platform-tests/resources/testharness.js',
       { encoding: 'utf8' },
     );
@@ -48,7 +50,7 @@ new Promise((resolve, reject) => {
     });
 
     const target = environment.argv[1];
-    const source = await FileSystem.readFile(target, { encoding: 'utf8' });
+    const source = await readFile(target, { encoding: 'utf8' });
 
     // assign global.self late to trick wpt into
     // thinking this is a shell environment

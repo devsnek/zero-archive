@@ -37,6 +37,6 @@ module.exports = {
     DynamicLibrary: false,
     environment: false,
     binding: true,
-    FileSystem: false,
+    fileSystem: false,
   },
 };
