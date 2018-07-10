@@ -319,6 +319,15 @@ static void Symlink(const FunctionCallbackInfo<Value>& args) {
   FS_CALL(symlink, args, nullptr, *from, *to, 0);
 }
 
+static void Copy(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  String::Utf8Value from(isolate, args[0]);
+  String::Utf8Value to(isolate, args[1]);
+  int flags = args[2]->Int32Value();
+
+  FS_CALL(copyfile, args, nullptr, *from, *to, flags);
+}
+
 void Init(Local<Context> context, Local<Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "open", Open);
   ZERO_SET_PROPERTY(context, exports, "close", Close);
@@ -332,6 +341,7 @@ void Init(Local<Context> context, Local<Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "rmdir", Rmdir);
   ZERO_SET_PROPERTY(context, exports, "mkdir", Mkdir);
   ZERO_SET_PROPERTY(context, exports, "symlink", Symlink);
+  ZERO_SET_PROPERTY(context, exports, "copy", Copy);
 
 #define V(n) ZERO_SET_PROPERTY(context, exports, #n, n);
   V(O_APPEND)
@@ -350,6 +360,7 @@ void Init(Local<Context> context, Local<Object> exports) {
   V(S_IFMT)
   V(S_IFREG)
   V(S_IFSOCK)
+  V(UV_FS_COPYFILE_EXCL)
 #undef V
 }
 
