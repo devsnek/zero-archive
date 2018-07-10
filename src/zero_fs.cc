@@ -289,6 +289,36 @@ static void Realpath(const FunctionCallbackInfo<Value>& args) {
   FS_CALL(realpath, args, nullptr, *path);
 }
 
+static void Unlink(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  String::Utf8Value path(isolate, args[0]);
+
+  FS_CALL(unlink, args, nullptr, *path);
+}
+
+static void Rmdir(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  String::Utf8Value path(isolate, args[0]);
+
+  FS_CALL(unlink, args, nullptr, *path);
+}
+
+static void Mkdir(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  String::Utf8Value path(isolate, args[0]);
+  int mode = args[1]->Int32Value();
+
+  FS_CALL(mkdir, args, nullptr, *path, mode);
+}
+
+static void Symlink(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  String::Utf8Value from(isolate, args[0]);
+  String::Utf8Value to(isolate, args[1]);
+
+  FS_CALL(symlink, args, nullptr, *from, *to, 0);
+}
+
 void Init(Local<Context> context, Local<Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "open", Open);
   ZERO_SET_PROPERTY(context, exports, "close", Close);
@@ -298,6 +328,10 @@ void Init(Local<Context> context, Local<Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "write", Write);
   ZERO_SET_PROPERTY(context, exports, "scandir", Scandir);
   ZERO_SET_PROPERTY(context, exports, "realpath", Realpath);
+  ZERO_SET_PROPERTY(context, exports, "unlink", Unlink);
+  ZERO_SET_PROPERTY(context, exports, "rmdir", Rmdir);
+  ZERO_SET_PROPERTY(context, exports, "mkdir", Mkdir);
+  ZERO_SET_PROPERTY(context, exports, "symlink", Symlink);
 
 #define V(n) ZERO_SET_PROPERTY(context, exports, #n, n);
   V(O_APPEND)
