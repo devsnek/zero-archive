@@ -2,7 +2,8 @@ import { pass, fail, assertEqual, fixtures } from '../common';
 
 fileSystem.readDirectory(fixtures)
   .then((arr) => {
-    assertEqual(arr.includes('hello.txt'), true);
+    const found = !!arr.find((i) => i.name === 'hello.txt' && i.type === 'file');
+    assertEqual(found, true);
     pass();
   })
   .catch(fail);

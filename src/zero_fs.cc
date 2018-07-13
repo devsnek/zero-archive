@@ -13,6 +13,7 @@ using v8::FunctionCallbackInfo;
 using v8::Integer;
 using v8::Isolate;
 using v8::Local;
+using v8::Number;
 using v8::Object;
 using v8::Persistent;
 using v8::Promise;
@@ -66,7 +67,7 @@ class ZeroReq {
     v->Set(
         v->CreationContext(),
         ZERO_STRING(isolate_, "code"),
-        v8::Number::New(isolate_, err)).ToChecked();
+        Number::New(isolate_, err)).ToChecked();
     finish(v);
   }
 
@@ -183,8 +184,10 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
         if (r != 0) {
           return v8::Exception::Error(ZERO_STRING(isolate, "scandir error"));
         }
-        Local<String> name = String::NewFromUtf8(isolate, ent.name);
-        table->Set(context, i, name).ToChecked();
+        Local<Array> entry = Array::New(isolate, 2);
+        entry->Set(context, 0, String::NewFromUtf8(isolate, ent.name)).ToChecked();
+        entry->Set(context, 1, Number::New(isolate, ent.type)).ToChecked();
+        table->Set(context, i, entry).ToChecked();
       }
       return table;
     }
@@ -365,6 +368,14 @@ void Init(Local<Context> context, Local<Object> exports) {
   V(S_IFREG)
   V(S_IFSOCK)
   V(UV_FS_COPYFILE_EXCL)
+  V(UV_DIRENT_UNKNOWN)
+  V(UV_DIRENT_FILE)
+  V(UV_DIRENT_DIR)
+  V(UV_DIRENT_LINK)
+  V(UV_DIRENT_FIFO)
+  V(UV_DIRENT_SOCKET)
+  V(UV_DIRENT_CHAR)
+  V(UV_DIRENT_BLOCK)
 #undef V
 }
 
