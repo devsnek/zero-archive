@@ -62,7 +62,11 @@ class ZeroReq {
     std::string e = type();
     e += ": ";
     e += uv_strerror(err);
-    Local<Value> v = v8::Exception::Error(ZERO_STRING(isolate_, e.c_str()));
+    Local<Object> v = v8::Exception::Error(ZERO_STRING(isolate_, e.c_str())).As<Object>();
+    v->Set(
+        v->CreationContext(),
+        ZERO_STRING(isolate_, "code"),
+        v8::Number::New(isolate_, err)).ToChecked();
     finish(v);
   }
 
