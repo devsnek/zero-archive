@@ -1,6 +1,5 @@
-#include <dlfcn.h>
-
 #include "ffi.h"
+#include "uv.h"
 #include "v8.h"
 #include "zero.h"
 #include "base_object-inl.h"
@@ -97,30 +96,35 @@ void Dlopen(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   Local<Context> context = isolate->GetCurrentContext();
 
-  void* handle;
+  auto lib = new uv_lib_t;
+  int success;
   if (args[0]->IsString()) {
     String::Utf8Value filename(isolate, args[0]);
-    handle = dlopen(*filename, RTLD_LAZY);
+    success = uv_dlopen(*filename, lib);
   } else {
-    handle = dlopen(nullptr, RTLD_LAZY);
+    success = uv_dlopen(nullptr, lib);
   }
 
-  if (handle) {
+  if (success == 0) {
     Local<Array> functions = args[1].As<Array>();
     uint32_t len = functions->Length();
     Local<Array> pointers = Array::New(isolate, len);
     for (uint32_t i = 0; i < len; i += 1) {
       String::Utf8Value name(isolate, functions->Get(context, i).ToLocalChecked());
-      char* ptr = reinterpret_cast<char*>(dlsym(handle, *name));
-      if (!ptr) {
-        args.GetReturnValue().Set(ZERO_STRING(isolate, dlerror()));
-        break;
+      void* ptr = nullptr;
+      if (uv_dlsym(lib, *name, &ptr) == 0) {
+        pointers->Set(context, i,
+            WrapPointer(isolate, reinterpret_cast<char*>(ptr))).ToChecked();
+      } else {
+        args.GetReturnValue().Set(ZERO_STRING(isolate, uv_dlerror(lib)));
+        uv_dlclose(lib);
+        return;
       }
-      pointers->Set(context, i, WrapPointer(isolate, ptr)).ToChecked();
     }
     args.GetReturnValue().Set(pointers);
   } else {
-    args.GetReturnValue().Set(ZERO_STRING(isolate, dlerror()));
+    args.GetReturnValue().Set(ZERO_STRING(isolate, uv_dlerror(lib)));
+    uv_dlclose(lib);
   }
 }
 
