@@ -53,7 +53,7 @@ Check out the [0.0.1 Release Project][] for info on what needs to be done still.
 - `cstring`
 
 All number types where the value may be greater than
-`Number.MAX_SAFE_INTERGER` are represented with BigInts. Arguments to these
+`Number.MAX_SAFE_INTEGER` are represented with BigInts. Arguments to these
 types may be passed as Numbers but they will be converted to BigInt and
 return values will always be BigInt.
 
