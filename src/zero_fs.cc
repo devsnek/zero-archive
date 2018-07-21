@@ -162,11 +162,11 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
     }
 
     case UV_FS_MKDTEMP:
-      return v8::String::NewFromUtf8(isolate, req->path);
+      return ZERO_STRING(isolate, req->path);
 
     case UV_FS_READLINK:
     case UV_FS_REALPATH:
-      return v8::String::NewFromUtf8(isolate, reinterpret_cast<char*>(req->ptr));
+      return ZERO_STRING(isolate, reinterpret_cast<char*>(req->ptr));
 
     case UV_FS_READ:
       return v8::Uint8Array::New(
@@ -185,7 +185,7 @@ Local<Value> normalize_req(Isolate* isolate, uv_fs_t* req) {
           return v8::Exception::Error(ZERO_STRING(isolate, "scandir error"));
         }
         Local<Array> entry = Array::New(isolate, 2);
-        entry->Set(context, 0, String::NewFromUtf8(isolate, ent.name)).ToChecked();
+        entry->Set(context, 0, ZERO_STRING(isolate, ent.name)).ToChecked();
         entry->Set(context, 1, Number::New(isolate, ent.type)).ToChecked();
         table->Set(context, i, entry).ToChecked();
       }

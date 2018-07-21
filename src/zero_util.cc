@@ -125,7 +125,7 @@ static void GetEnv(const FunctionCallbackInfo<Value>& args) {
     String::Utf8Value key(isolate, args[0]);
     const char* val = getenv(*key);
     if (val) {
-      return args.GetReturnValue().Set(String::NewFromUtf8(isolate, val));
+      return args.GetReturnValue().Set(ZERO_STRING(isolate, val));
     }
   }
 }

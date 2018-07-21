@@ -69,7 +69,7 @@ void ReadCString(const FunctionCallbackInfo<Value>& args) {
 
   char* ptr = reinterpret_cast<char*>(buf->Buffer()->GetContents().Data()) + offset;
 
-  args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, ptr));
+  args.GetReturnValue().Set(ZERO_STRING(isolate, ptr));
 }
 
 // cif, nargs, rtype, atypes

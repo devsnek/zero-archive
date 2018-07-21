@@ -45,6 +45,9 @@
 
 template <typename T> inline void USE(T&&) {};
 
+#define ZERO_STRING(isolate, s) \
+  v8::String::NewFromUtf8(isolate, s, v8::NewStringType::kNormal).ToLocalChecked()
+
 inline void ZERO_SET_PROPERTY(
     v8::Local<v8::Context> context,
     v8::Local<v8::Object> target,
@@ -52,8 +55,8 @@ inline void ZERO_SET_PROPERTY(
     const char* value) {
   v8::Isolate* isolate = context->GetIsolate();
   USE(target->Set(context,
-                  v8::String::NewFromUtf8(isolate, name),
-                  v8::String::NewFromUtf8(isolate, value)));
+                  ZERO_STRING(isolate, name),
+                  ZERO_STRING(isolate, value)));
 }
 
 inline void ZERO_SET_PROPERTY(
@@ -63,7 +66,7 @@ inline void ZERO_SET_PROPERTY(
     double value) {
   v8::Isolate* isolate = context->GetIsolate();
   USE(target->Set(context,
-                  v8::String::NewFromUtf8(isolate, name),
+                  ZERO_STRING(isolate, name),
                   v8::Number::New(isolate, value)));
 }
 
@@ -74,7 +77,7 @@ inline void ZERO_SET_PROPERTY(
     int32_t value) {
   v8::Isolate* isolate = context->GetIsolate();
   USE(target->Set(context,
-                  v8::String::NewFromUtf8(isolate, name),
+                  ZERO_STRING(isolate, name),
                   v8::Integer::New(isolate, value)));
 }
 
@@ -92,7 +95,7 @@ inline void ZERO_SET_PROPERTY(
     const char* name,
     v8::Local<v8::Value> value) {
   USE(target->Set(context,
-                  v8::String::NewFromUtf8(context->GetIsolate(), name),
+                  ZERO_STRING(context->GetIsolate(), name),
                   value));
 }
 
@@ -116,14 +119,12 @@ inline void ZERO_SET_PROTO_PROP(
     v8::FunctionCallback callback) {
   v8::Isolate* isolate = context->GetIsolate();
   that->PrototypeTemplate()->Set(
-      v8::String::NewFromUtf8(isolate, name),
+      ZERO_STRING(isolate, name),
       v8::FunctionTemplate::New(isolate, callback));
 }
 
-#define ZERO_STRING(isolate, s) v8::String::NewFromUtf8(isolate, s)
-
 #define ZERO_THROW_EXCEPTION(isolate, message) \
-  (void) isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate, message)))
+  (void) isolate->ThrowException(v8::Exception::Error(ZERO_STRING(isolate, message)))
 
 #define ZERO_REGISTER_INTERNAL(name, fn)                                      \
   static zero::zero_module _zero_module_##name = {#name, fn};                 \

@@ -233,7 +233,7 @@ int main(int process_argc, char** process_argv) {
     Local<Array> pargv = Array::New(isolate, argc);
     ZERO_SET_PROPERTY(context, process, "argv", pargv);
     for (int i = 0; i < argc; i++)
-      USE(pargv->Set(context, i, String::NewFromUtf8(isolate, argv[i])));
+      USE(pargv->Set(context, i, ZERO_STRING(isolate, argv[i])));
 
     Local<Object> versions = Object::New(isolate);
 
