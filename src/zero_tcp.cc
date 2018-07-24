@@ -3,12 +3,14 @@
 
 #include "v8.h"
 #include "zero.h"
+#include "base_object-inl.h"
 
 using v8::ArrayBuffer;
 using v8::Context;
 using v8::External;
 using v8::Function;
 using v8::FunctionCallbackInfo;
+using v8::FunctionTemplate;
 using v8::Isolate;
 using v8::Local;
 using v8::Object;
@@ -17,22 +19,7 @@ using v8::String;
 using v8::Value;
 
 namespace zero {
-namespace tcp {
-
-typedef struct {
-  uv_tcp_t handle;
-  uv_shutdown_t shutdown;
-  uv_connect_t connect;
-  uv_buf_t reading;
-  Isolate* isolate;
-  Persistent<Object> that;
-  Persistent<Function> on_connection;
-  Persistent<Function> on_connect;
-  Persistent<Function> on_write;
-  Persistent<Function> on_read;
-  Persistent<Function> on_finish;
-  Persistent<Function> on_close;
-} zero_tcp_t;
+namespace tcp_wrap {
 
 #define HANDLE_UV(isolate, op) do {                                           \
   int ret = (op);                                                             \
@@ -42,94 +29,120 @@ typedef struct {
   }                                                                           \
 } while (0)
 
-static void Init(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  zero_tcp_t* that = new zero_tcp_t;
+static Persistent<Function> constructor;
 
-  that->isolate = isolate;
-  that->that.Reset(isolate, args[0].As<Object>());
-  that->handle.data = that;
+class TCPWrap : BaseObject {
+ public:
+  TCPWrap(Isolate* isolate,
+          Local<Object> obj) : BaseObject(isolate, obj) {
+    handle_.data = this;
+  }
 
-  uv_tcp_init(uv_default_loop(), &that->handle);
+  ~TCPWrap() {
+    // uv_close(&handle_, []() {});
+  }
 
-  args.GetReturnValue().Set(External::New(isolate, that));
-}
+  static void New(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
+    Local<Object> that = args.This();
 
-static void on_uv_connection(uv_stream_t* handle, int) {
-  auto that = reinterpret_cast<zero_tcp_t*>(handle->data);
-  Isolate* isolate = that->isolate;
-  Local<Context> context = isolate->GetCurrentContext();
+    new TCPWrap(isolate, that);
 
-  zero_tcp_t* client = new zero_tcp_t;
-  uv_accept(handle, reinterpret_cast<uv_stream_t*>(&client->handle));
+    args.GetReturnValue().Set(that);
+  }
 
-  Local<Function> fn = that->on_connection.Get(isolate);
-  Local<Value> val;
+  static void Listen(const FunctionCallbackInfo<Value>& args) {
+    TCPWrap* that;
+    ASSIGN_OR_RETURN_UNWRAP(&that, args.This());
+    Isolate* isolate = args.GetIsolate();
 
-  Local<Value> args[] = { External::New(isolate, client) };
-  USE(fn->Call(context, v8::Undefined(isolate), 1, args));
-}
+    int port = args[0]->Int32Value();
+    String::Utf8Value ip(isolate, args[1]);
 
-static void Listen(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  auto that = reinterpret_cast<zero_tcp_t*>(args[0].As<External>()->Value());
+    struct sockaddr_in addr;
+    HANDLE_UV(isolate, uv_ip4_addr(*ip, port, &addr));
 
-  int port = args[1]->Int32Value();
-  String::Utf8Value ip(isolate, args[2]);
-  Local<Function> cb = args[3].As<Function>();
+    HANDLE_UV(isolate,
+        uv_tcp_bind(&that->handle_, reinterpret_cast<const struct sockaddr*>(&addr), 0));
 
-  that->on_connection.Reset(isolate, cb);
+    HANDLE_UV(isolate,
+        uv_listen(reinterpret_cast<uv_stream_t*>(&that->handle_), 511, on_uv_connection));
+  }
 
-  struct sockaddr_in addr;
-  HANDLE_UV(isolate, uv_ip4_addr(*ip, port, &addr));
+  static void Connect(const FunctionCallbackInfo<Value>& args) {
+    TCPWrap* that;
+    ASSIGN_OR_RETURN_UNWRAP(&that, args.This());
+    Isolate* isolate = args.GetIsolate();
 
-  HANDLE_UV(isolate,
-      uv_tcp_bind(&that->handle, reinterpret_cast<const struct sockaddr*>(&addr), 0));
+    int port = args[0]->Int32Value();
+    String::Utf8Value ip(isolate, args[1]);
 
-  HANDLE_UV(isolate,
-      uv_listen(reinterpret_cast<uv_stream_t*>(&that->handle), 511, on_uv_connection));
-}
+    struct sockaddr_in addr;
+    HANDLE_UV(isolate, uv_ip4_addr(*ip, port, &addr));
 
-static void on_uv_connect(uv_connect_t* req, int status) {
-  auto that = reinterpret_cast<zero_tcp_t*>(req->handle->data);
-  Isolate* isolate = that->isolate;
-  Local<Context> context = isolate->GetCurrentContext();
+    HANDLE_UV(isolate, uv_tcp_connect(
+          &that->connect_,
+          &that->handle_,
+          reinterpret_cast<const struct sockaddr*>(&addr),
+          on_uv_connect));
+  }
 
-  Local<Function> cb = that->on_connect.Get(isolate);
+ private:
+  static void on_uv_connection(uv_stream_t* handle, int) {
+    auto that = reinterpret_cast<TCPWrap*>(handle->data);
+    Isolate* isolate = that->isolate();
+    Local<Context> context = isolate->GetCurrentContext();
 
-  Local<Value> args[] = { v8::Int32::New(isolate, status) };
-  USE(cb->Call(context, v8::Undefined(isolate), 1, args));
+    auto client_obj = constructor.Get(isolate)->NewInstance(context).ToLocalChecked();
+    TCPWrap* client;
+    ASSIGN_OR_RETURN_UNWRAP(&client, client_obj);
+    uv_accept(handle, reinterpret_cast<uv_stream_t*>(&client->handle_));
 
-  that->on_connect.Reset();
-}
+    // Local<Function> fn = that->on_connection.Get(isolate);
+    // Local<Value> val;
 
-static void Connect(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  auto that = reinterpret_cast<zero_tcp_t*>(args[0].As<External>()->Value());
+    // Local<Value> args[] = { External::New(isolate, client) };
+    // USE(fn->Call(context, v8::Undefined(isolate), 1, args));
+  }
 
-  int port = args[1]->Int32Value();
-  String::Utf8Value ip(isolate, args[2]);
-  Local<Function> cb = args[3].As<Function>();
+  static void on_uv_connect(uv_connect_t* req, int status) {
+    auto that = reinterpret_cast<TCPWrap*>(req->handle->data);
+    Isolate* isolate = that->isolate();
+    Local<Context> context = isolate->GetCurrentContext();
 
-  that->on_connect.Reset(isolate, cb);
+    // Local<Function> cb = that->on_connect.Get(isolate);
 
-  struct sockaddr_in addr;
-  HANDLE_UV(isolate, uv_ip4_addr(*ip, port, &addr));
+    // Local<Value> args[] = { v8::Int32::New(isolate, status) };
+    // USE(cb->Call(context, v8::Undefined(isolate), 1, args));
 
-  HANDLE_UV(isolate, uv_tcp_connect(
-        &that->connect,
-        &that->handle,
-        reinterpret_cast<const struct sockaddr*>(&addr),
-        on_uv_connect));
-}
+    // that->on_connect.Reset();
+  }
+
+  uv_tcp_t handle_;
+  uv_shutdown_t shutdown_;
+  uv_connect_t connect_;
+  uv_buf_t reading_;
+  Persistent<Function> on_connection_;
+  Persistent<Function> on_connect_;
+  Persistent<Function> on_write_;
+  Persistent<Function> on_read_;
+  Persistent<Function> on_finish_;
+  Persistent<Function> on_close_;
+};
 
 void Init(Local<Context> context, Local<Object> target) {
-  ZERO_SET_PROPERTY(context, target, "init", Init);
-  ZERO_SET_PROPERTY(context, target, "listen", Listen);
-  ZERO_SET_PROPERTY(context, target, "connect", Connect);
+  Isolate* isolate = context->GetIsolate();
+
+  Local<FunctionTemplate> tpl = BaseObject::MakeJSTemplate(isolate, "TCPWrap", TCPWrap::New);
+
+  ZERO_SET_PROTO_PROP(context, tpl, "connect", TCPWrap::Connect);
+  ZERO_SET_PROTO_PROP(context, tpl, "listen", TCPWrap::Listen);
+
+  constructor.Reset(isolate, tpl->GetFunction());
+  target->Set(ZERO_STRING(isolate, "TCPWrap"), tpl->GetFunction());
 }
 
-}  // namespace tcp
+}  // namespace tcp_wrap
 }  // namespace zero
 
-ZERO_REGISTER_INTERNAL(tcp, zero::tcp::Init);
+ZERO_REGISTER_INTERNAL(tcp_wrap, zero::tcp_wrap::Init);

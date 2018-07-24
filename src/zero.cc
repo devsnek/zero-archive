@@ -44,7 +44,7 @@ using v8::TryCatch;
   V(tty);                        \
   V(debug);                      \
   V(performance);                \
-  V(tcp);                        \
+  V(tcp_wrap);                   \
   V(inspector_sync);             \
   V(types);                      \
   V(timer_wrap);                 \
