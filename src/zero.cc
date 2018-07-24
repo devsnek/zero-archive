@@ -163,6 +163,7 @@ static const char* v8_argv[] = {
   "--allow-natives-syntax",
   "--experimental-extras",
   "--enable-experimental-builtins",
+  "--harmony-intl-relative-time-format",
 };
 static int v8_argc = zero::arraysize(v8_argv);
 
