@@ -106,9 +106,9 @@ class TCPWrap : BaseObject {
   }
 
   static void on_uv_connect(uv_connect_t* req, int status) {
-    auto that = reinterpret_cast<TCPWrap*>(req->handle->data);
-    Isolate* isolate = that->isolate();
-    Local<Context> context = isolate->GetCurrentContext();
+    // auto that = reinterpret_cast<TCPWrap*>(req->handle->data);
+    // Isolate* isolate = that->isolate();
+    // Local<Context> context = isolate->GetCurrentContext();
 
     // Local<Function> cb = that->on_connect.Get(isolate);
 
@@ -119,9 +119,9 @@ class TCPWrap : BaseObject {
   }
 
   uv_tcp_t handle_;
-  uv_shutdown_t shutdown_;
+  // uv_shutdown_t shutdown_;
   uv_connect_t connect_;
-  uv_buf_t reading_;
+  // uv_buf_t reading_;
   Persistent<Function> on_connection_;
   Persistent<Function> on_connect_;
   Persistent<Function> on_write_;

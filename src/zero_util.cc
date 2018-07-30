@@ -12,6 +12,7 @@ using v8::Integer;
 using v8::Isolate;
 using v8::String;
 using v8::Value;
+using v8::Persistent;
 using v8::Promise;
 using v8::Proxy;
 using v8::Value;
@@ -144,6 +145,53 @@ static void UnsetEnv(const FunctionCallbackInfo<Value>& args) {
   }
 }
 
+class WeakRef {
+ public:
+  WeakRef(Isolate* isolate,
+           Local<Object> object,
+           Local<Function> callback)
+    : isolate_(isolate) {
+    persistent_.Reset(isolate_, object);
+    callback_.Reset(isolate_, callback);
+
+    persistent_.SetWeak(this, Callback, v8::WeakCallbackType::kParameter);
+  }
+
+  ~WeakRef() {
+    persistent_.Reset();
+    callback_.Reset();
+  }
+
+  inline Local<Function> callback() {
+    return callback_.Get(isolate_);
+  }
+
+  static void New(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
+    Local<Object> object = args[0].As<Object>();
+    Local<Function> callback = args[1].As<Function>();
+
+    new WeakRef(isolate, object, callback);
+  }
+
+ private:
+  static void Callback(const v8::WeakCallbackInfo<WeakRef>& args) {
+    Isolate* isolate = args.GetIsolate();
+    Local<Context> context = isolate->GetCurrentContext();
+
+    auto data = reinterpret_cast<WeakRef*>(args.GetParameter());
+
+    data->callback()->Call(
+        context, v8::Undefined(isolate), 0, nullptr).ToLocalChecked();
+
+    delete data;
+  }
+
+  Isolate* isolate_;
+  Persistent<Object> persistent_;
+  Persistent<Function> callback_;
+};
+
 static void Init(Local<Context> context, Local<Object> target) {
   ZERO_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
   ZERO_SET_PROPERTY(context, target, "getProxyDetails", GetProxyDetails);
@@ -156,6 +204,7 @@ static void Init(Local<Context> context, Local<Object> target) {
   ZERO_SET_PROPERTY(context, target, "getEnv", GetEnv);
   ZERO_SET_PROPERTY(context, target, "setEnv", SetEnv);
   ZERO_SET_PROPERTY(context, target, "unsetEnv", UnsetEnv);
+  ZERO_SET_PROPERTY(context, target, "WeakRef", WeakRef::New);
 
 #define V(name) \
   ZERO_SET_PROPERTY(context, target, #name, Promise::PromiseState::name);

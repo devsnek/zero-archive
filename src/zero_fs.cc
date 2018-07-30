@@ -9,6 +9,8 @@ using v8::ArrayBuffer;
 using v8::ArrayBufferView;
 using v8::BigInt;
 using v8::Context;
+using v8::External;
+using v8::Function;
 using v8::FunctionCallbackInfo;
 using v8::Integer;
 using v8::Isolate;
@@ -335,6 +337,84 @@ static void Copy(const FunctionCallbackInfo<Value>& args) {
   FS_CALL(copyfile, args, nullptr, *from, *to, flags);
 }
 
+static void Rename(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  String::Utf8Value from(isolate, args[0]);
+  String::Utf8Value to(isolate, args[1]);
+
+  FS_CALL(rename, args, nullptr, *from, *to);
+}
+
+static void Utime(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  String::Utf8Value path(isolate, args[0]);
+  double atime = args[1]->NumberValue();
+  double mtime = args[2]->NumberValue();
+
+  FS_CALL(utime, args, nullptr, *path, atime, mtime);
+}
+
+static void FUtime(const FunctionCallbackInfo<Value>& args) {
+  uv_file file = args[0]->Uint32Value();
+  double atime = args[1]->NumberValue();
+  double mtime = args[2]->NumberValue();
+
+  FS_CALL(futime, args, nullptr, file, atime, mtime);
+}
+
+class ZeroEvent {
+ public:
+  ZeroEvent(Isolate* isolate, Local<Value> cb) :
+    isolate(isolate) {
+    callback.Reset(isolate, cb.As<Function>());
+  }
+  ~ZeroEvent() {
+    callback.Reset();
+  }
+
+  Isolate* isolate;
+  Persistent<Function> callback;
+};
+
+void fs_event_cb(uv_fs_event_t* handle, const char* filename, int events, int) {
+  auto data = reinterpret_cast<ZeroEvent*>(handle->data);
+  InternalCallbackScope scope(data->isolate);
+  Local<Context> context = data->isolate->GetCurrentContext();
+
+  Local<Value> args[] = {
+    ZERO_STRING(data->isolate, filename),
+    Number::New(data->isolate, events),
+  };
+
+  Local<Function> cb = data->callback.Get(data->isolate);
+
+  cb->Call(context, cb, 2, args).ToLocalChecked();
+}
+
+static void EventStart(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+
+  String::Utf8Value path(isolate, args[0]);
+  unsigned int flags = args[1]->Uint32Value();
+
+  uv_fs_event_t* handle = new uv_fs_event_t;
+  uv_fs_event_init(uv_default_loop(), handle);
+
+  handle->data = new ZeroEvent(isolate, args[2]);
+
+  uv_fs_event_start(handle, fs_event_cb, *path, flags);
+
+  args.GetReturnValue().Set(External::New(isolate, handle));
+}
+
+static void EventStop(const FunctionCallbackInfo<Value>& args) {
+  auto handle = reinterpret_cast<uv_fs_event_t*>(args[0].As<External>()->Value());
+
+  delete reinterpret_cast<ZeroEvent*>(handle->data);
+
+  uv_fs_event_stop(handle);
+}
+
 void Init(Local<Context> context, Local<Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "open", Open);
   ZERO_SET_PROPERTY(context, exports, "close", Close);
@@ -349,6 +429,11 @@ void Init(Local<Context> context, Local<Object> exports) {
   ZERO_SET_PROPERTY(context, exports, "mkdir", Mkdir);
   ZERO_SET_PROPERTY(context, exports, "symlink", Symlink);
   ZERO_SET_PROPERTY(context, exports, "copy", Copy);
+  ZERO_SET_PROPERTY(context, exports, "rename", Rename);
+  ZERO_SET_PROPERTY(context, exports, "utime", Utime);
+  ZERO_SET_PROPERTY(context, exports, "futime", FUtime);
+  ZERO_SET_PROPERTY(context, exports, "eventStart", EventStart);
+  ZERO_SET_PROPERTY(context, exports, "eventStop", EventStop);
 
 #define V(n) ZERO_SET_PROPERTY(context, exports, #n, n);
   V(O_APPEND)
