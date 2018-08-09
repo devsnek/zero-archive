@@ -260,6 +260,7 @@ enum EmbedderKeys {
 };
 
 static v8::Eternal<v8::Function> exit_handler;
+static v8::Eternal<v8::Function> promise_callback;
 
 class ZeroPlatform;
 static ZeroPlatform* platform;

@@ -193,95 +193,6 @@ class WeakRef {
   Persistent<Function> callback_;
 };
 
-Persistent<Function> promise_hook_callback;
-
-typedef enum PromiseHookType {
-  kInit,
-  kResolve,
-  kBefore,
-  kAfter,
-  kRejectWithNoHandler,
-  kHandlerAddedAfterReject,
-  kRejectAfterResolved,
-  kResolveAfterResolved,
-} PromiseHookType;
-
-void PromiseHook(v8::PromiseHookType v8type,
-                 Local<Promise> promise,
-                 Local<Value> parent) {
-  PromiseHookType type;
-  if (v8type == v8::PromiseHookType::kInit) {
-    type = PromiseHookType::kInit;
-  } else if (v8type == v8::PromiseHookType::kResolve) {
-    type = PromiseHookType::kResolve;
-  } else if (v8type == v8::PromiseHookType::kBefore) {
-    type = PromiseHookType::kBefore;
-  } else if (v8type == v8::PromiseHookType::kAfter) {
-    type = PromiseHookType::kAfter;
-  } else {
-    return;
-  }
-
-  Isolate* isolate = Isolate::GetCurrent();
-
-  Local<Function> cb = promise_hook_callback.Get(isolate);
-
-  Local<Value> args[] = {
-    Number::New(isolate, type),
-    promise,
-    parent,
-  };
-
-  cb->Call(isolate->GetCurrentContext(), cb, 3, args).ToLocalChecked();
-}
-void PromiseRejectCallback(v8::PromiseRejectMessage message) {
-  v8::PromiseRejectEvent event = message.GetEvent();
-  PromiseHookType type;
-  if (event == v8::PromiseRejectEvent::kPromiseRejectWithNoHandler) {
-    type = PromiseHookType::kRejectWithNoHandler;
-  } else if (event == v8::PromiseRejectEvent::kPromiseHandlerAddedAfterReject) {
-    type = PromiseHookType::kHandlerAddedAfterReject;
-  } else if (event == v8::PromiseRejectEvent::kPromiseRejectAfterResolved) {
-    type = PromiseHookType::kRejectAfterResolved;
-  } else if (event == v8::PromiseRejectEvent::kPromiseResolveAfterResolved) {
-    type = PromiseHookType::kResolveAfterResolved;
-  } else {
-    return;
-  }
-
-  Local<Promise> promise = message.GetPromise();
-  Isolate* isolate = promise->GetIsolate();
-  Local<Value> value = message.GetValue();
-
-  Local<Function> cb = promise_hook_callback.Get(isolate);
-
-  Local<Value> args[] = {
-    Number::New(isolate, type),
-    promise,
-    value,
-  };
-  if (value.IsEmpty()) {
-    args[2] = v8::Undefined(isolate);
-  }
-
-  cb->Call(isolate->GetCurrentContext(), cb, 3, args).ToLocalChecked();
-}
-
-void AddPromiseHook(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-
-  promise_hook_callback.Reset(isolate, args[0].As<Function>());
-  isolate->SetPromiseHook(PromiseHook);
-  isolate->SetPromiseRejectCallback(PromiseRejectCallback);
-}
-
-void RemovePromiseHook(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  isolate->SetPromiseHook(nullptr);
-  isolate->SetPromiseRejectCallback(nullptr);
-  promise_hook_callback.Reset();
-}
-
 static void Init(Local<Context> context, Local<Object> target) {
   ZERO_SET_PROPERTY(context, target, "getPromiseDetails", GetPromiseDetails);
   ZERO_SET_PROPERTY(context, target, "getProxyDetails", GetProxyDetails);
@@ -295,8 +206,6 @@ static void Init(Local<Context> context, Local<Object> target) {
   ZERO_SET_PROPERTY(context, target, "setEnv", SetEnv);
   ZERO_SET_PROPERTY(context, target, "unsetEnv", UnsetEnv);
   ZERO_SET_PROPERTY(context, target, "WeakRef", WeakRef::New);
-  ZERO_SET_PROPERTY(context, target, "addPromiseHook", AddPromiseHook);
-  ZERO_SET_PROPERTY(context, target, "removePromiseHook", RemovePromiseHook);
 
 #define V(name) \
   ZERO_SET_PROPERTY(context, target, #name, Promise::PromiseState::name);

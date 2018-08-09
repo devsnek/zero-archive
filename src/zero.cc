@@ -148,10 +148,33 @@ static void Exit(const FunctionCallbackInfo<Value>& args) {
   exit(args[0]->Int32Value());
 }
 
+void PromiseRejectCallback(v8::PromiseRejectMessage message) {
+  Local<Promise> promise = message.GetPromise();
+  Isolate* isolate = promise->GetIsolate();
+  Local<Value> value = message.GetValue();
+  v8::PromiseRejectEvent event = message.GetEvent();
+
+  Local<Function> cb = zero::promise_callback.Get(isolate);
+
+  Local<Value> args[] = {
+    Number::New(isolate, event),
+    promise,
+    value,
+  };
+  if (value.IsEmpty()) {
+    args[2] = v8::Undefined(isolate);
+  }
+
+  cb->Call(isolate->GetCurrentContext(), cb, 3, args).ToLocalChecked();
+}
+
 static void SetCallbacks(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
   zero::exit_handler.Set(isolate, args[0].As<Function>());
+  zero::promise_callback.Set(isolate, args[1].As<Function>());
+
+  isolate->SetPromiseRejectCallback(PromiseRejectCallback);
 }
 
 static const char* v8_argv[] = {
