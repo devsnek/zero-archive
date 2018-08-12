@@ -4,5 +4,18 @@
   "hr-time/basic.any.js",
   "performance-timeline/webtiming-resolution.any.js",
   "streams/byte-length-queuing-strategy.js",
-  "streams/count-queuing-strategy.js"
+  "streams/count-queuing-strategy.js",
+  "url/url-searchparams.any.js",
+  "url/url-tojson.any.js",
+  "url/urlencoded-parser.any.js",
+  "url/urlsearchparams-append.any.js",
+  "url/urlsearchparams-constructor.any.js",
+  "url/urlsearchparams-delete.any.js",
+  "url/urlsearchparams-foreach.any.js",
+  "url/urlsearchparams-get.any.js",
+  "url/urlsearchparams-getall.any.js",
+  "url/urlsearchparams-has.any.js",
+  "url/urlsearchparams-set.any.js",
+  "url/urlsearchparams-sort.any.js",
+  "url/urlsearchparams-stringifier.any.js"
 ]
