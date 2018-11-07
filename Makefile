@@ -92,7 +92,6 @@ JSFILES = $(shell find lib -type f -name '*.js')
 
 V8 = "deps/v8/out.gn/$(V8_ARCH).release/obj/libv8_monolith.a"
 LIBUV = deps/libuv/out/Release/libuv.a
-ICU = $(shell pkg-config --libs --cflags icu-uc icu-io icu-i18n)
 LIBFFI = deps/libffi/build_out/.libs/libffi.a
 
 LIBS = $(LIBUV) $(LIBFFI)
@@ -100,7 +99,7 @@ LIBS = $(LIBUV) $(LIBFFI)
 INCLUDES = -Ideps/v8/include -Ideps/libuv/include -Ideps/libffi/build_out/include
 
 out/zero: $(LIBS) $(CFLIES) $(HFILES) $(V8) out/zero_blobs.cc | out
-	$(CC) $(CFLAGS) $(INCLUDES) $(V8) $(LIBS) $(ICU) $(CFILES) out/zero_blobs.cc -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(V8) $(LIBS) -Ideps/v8/third_party/icu -Ldeps/v8/third_party/icu -licuio -licui18n -licuuc $(CFILES) out/zero_blobs.cc -o $@
 
 $(V8):
 	tools/build-v8.sh $(V8_ARCH)

@@ -18,7 +18,8 @@ if [ ! -f "deps/v8/out.gn/$V8_ARCH.release/args.gn" ]; then
     is_component_build=false \
     v8_monolithic=true \
     v8_untrusted_code_mitigations=false \
-    v8_use_external_startup_data=false"
+    v8_use_external_startup_data=false \
+    v8_enable_i18n_support=true"
   gn gen "out.gn/$V8_ARCH.release" --check
 fi
 
